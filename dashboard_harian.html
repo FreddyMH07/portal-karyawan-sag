@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Harian - Portal Produksi SAG</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <link href="css/style.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary fixed-top">
+        <div class="container-fluid">
+            <a class="navbar-brand d-flex align-items-center" href="produksi.html">
+                <img src="assets/logo-PTSAG.png" alt="Logo" height="40" class="me-2">
+                <span>Dashboard Harian</span>
+            </a>
+            
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="produksi.html">
+                    <i class="fas fa-arrow-left me-1"></i>Kembali
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid main-content">
+        <!-- Header -->
+        <div class="dashboard-header">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <h3><i class="fas fa-calendar-day me-2"></i>Dashboard Harian Produksi</h3>
+                    <p class="text-muted mb-0">Monitoring produksi harian dengan filter dinamis</p>
+                </div>
+                <div class="col-md-6 text-end">
+                    <button class="btn btn-outline-primary me-2" onclick="refreshDashboard()">
+                        <i class="fas fa-sync-alt me-1"></i>Refresh
+                    </button>
+                    <button class="btn btn-success" onclick="exportDailyData()">
+                        <i class="fas fa-file-excel me-1"></i>Export Excel
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="filter-card">
+            <h5 class="mb-3"><i class="fas fa-filter me-2"></i>Filter Data</h5>
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Tanggal Mulai</label>
+                    <input type="date" class="form-control" id="startDate">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Tanggal Akhir</label>
+                    <input type="date" class="form-control" id="endDate">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Kebun (PT)</label>
+                    <select class="form-select" id="kebunFilter">
+                        <option value="">Semua Kebun</option>
+                        <option value="PT. PAL">PT. PAL</option>
+                        <option value="PT. LSP RS">PT. LSP RS</option>
+                        <option value="PT. LSP PR">PT. LSP PR</option>
+                        <option value="CANDIMAS">CANDIMAS</option>
+                        <option value="PT. HSBS">PT. HSBS</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Divisi</label>
+                    <select class="form-select" id="divisiFilter">
+                        <option value="">Semua Divisi</option>
+                        <option value="Divisi 1">Divisi 1</option>
+                        <option value="Divisi 2">Divisi 2</option>
+                        <option value="Divisi 3">Divisi 3</option>
+                        <option value="Divisi 4">Divisi 4</option>
+                    </select>
+                </div>
+            </div>
+            <div class="row mt-3">
+                <div class="col-12">
+                    <button class="btn btn-primary" onclick="applyFilters()">
+                        <i class="fas fa-search me-1"></i>Terapkan Filter
+                    </button>
+                    <button class="btn btn-outline-secondary ms-2" onclick="resetFilters()">
+                        <i class="fas fa-undo me-1"></i>Reset
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="row mb-4">
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="stat-card">
+                    <div class="stat-icon bg-success">
+                        <i class="fas fa-weight-hanging"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h6>Total Produksi</h6>
+                        <h4 id="totalProduksi">-</h4>
+                        <small class="text-muted">Ton</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="stat-card">
+                    <div class="stat-icon bg-info">
+                        <i class="fas fa-seedling"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h6>Total JJG</h6>
+                        <h4 id="totalJJG">-</h4>
+                        <small class="text-muted">Buah</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="stat-card">
+                    <div class="stat-icon bg-warning">
+                        <i class="fas fa-chart-bar"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h6>Rata-rata BJR</h6>
+                        <h4 id="avgBJR">-</h4>
+                        <small class="text-muted">Kg/JJG</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="stat-card">
+                    <div class="stat-icon bg-danger">
+                        <i class="fas fa-percentage"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h6>ACV Production</h6>
+                        <h4 id="acvProduction">-</h4>
+                        <small class="text-muted">%</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="row mb-4">
+            <div class="col-lg-8">
+                <div class="chart-card">
+                    <h5 class="mb-3">Trend Produksi Harian</h5>
+                    <canvas id="productionChart" height="100"></canvas>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="chart-card">
+                    <h5 class="mb-3">Distribusi per Kebun</h5>
+                    <canvas id="kebunChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Table -->
+        <div class="table-card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Data Produksi Harian</h5>
+                <div>
+                    <button class="btn btn-sm btn-outline-primary" onclick="addNewRecord()">
+                        <i class="fas fa-plus me-1"></i>Tambah Data
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="dailyProductionTable">
+                        <thead>
+                            <tr>
+                                <th>Tanggal</th>
+                                <th>Kebun</th>
+                                <th>Divisi</th>
+                                <th>Luas Panen (Ha)</th>
+                                <th>JJG Panen</th>
+                                <th>Tonase (Kg)</th>
+                                <th>BJR (Kg/JJG)</th>
+                                <th>Refraksi (%)</th>
+                                <th>AKP</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Data will be loaded via JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Modal -->
+    <div class="modal fade" id="dataModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalTitle">Tambah Data Produksi</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="dataForm">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Tanggal</label>
+                                <input type="date" class="form-control" id="modalTanggal" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Kebun</label>
+                                <select class="form-select" id="modalKebun" required>
+                                    <option value="">Pilih Kebun</option>
+                                    <option value="PT. PAL">PT. PAL</option>
+                                    <option value="PT. LSP RS">PT. LSP RS</option>
+                                    <option value="PT. LSP PR">PT. LSP PR</option>
+                                    <option value="CANDIMAS">CANDIMAS</option>
+                                    <option value="PT. HSBS">PT. HSBS</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Divisi</label>
+                                <select class="form-select" id="modalDivisi" required>
+                                    <option value="">Pilih Divisi</option>
+                                    <option value="Divisi 1">Divisi 1</option>
+                                    <option value="Divisi 2">Divisi 2</option>
+                                    <option value="Divisi 3">Divisi 3</option>
+                                    <option value="Divisi 4">Divisi 4</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Luas Panen (Ha)</label>
+                                <input type="number" class="form-control" id="modalLuasPanen" step="0.01" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">JJG Panen</label>
+                                <input type="number" class="form-control" id="modalJJGPanen" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Tonase (Kg)</label>
+                                <input type="number" class="form-control" id="modalTonase" step="0.1" required>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-primary" onclick="saveData()">Simpan</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="js/dashboard_harian.js"></script>
+</body>
+</html>
