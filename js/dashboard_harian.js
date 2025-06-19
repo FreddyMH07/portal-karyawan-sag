@@ -62,7 +62,7 @@ class DailyDashboard {
         
         // Generate demo data
         const kebunList = ['PT. PAL', 'PT. LSP RS', 'PT. LSP PR', 'CANDIMAS', 'PT. HSBS'];
-        const divisiList = ['Divisi 1', 'Divisi 2', 'Divisi 3', 'Divisi 4'];
+        const divisiList = ['Divisi 1', 'Divisi 2', 'Divisi 3', 'Divisi 4', 'INTI', 'PLASMA'];
         const data = [];
         
         for (let i = 0; i < 30; i++) {
