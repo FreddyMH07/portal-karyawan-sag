@@ -143,13 +143,7 @@ class LoginManager {
             }
         }
     }
-        } else {
-            return {
-                success: false,
-                message: 'Email atau password salah'
-            };
-        }
-    }
+
 
     async handleGoogleLogin() {
         this.showLoading(true);
