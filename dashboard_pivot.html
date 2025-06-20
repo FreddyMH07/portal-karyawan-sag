@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pivot Analysis - Portal Produksi SAG</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <link href="https://unpkg.com/pivottable/dist/pivot.css" rel="stylesheet">
+    <link href="css/style.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary fixed-top">
+        <div class="container-fluid">
+            <a class="navbar-brand d-flex align-items-center" href="produksi.html">
+                <img src="assets/logo-PTSAG.png" alt="Logo" height="40" class="me-2">
+                <span>Pivot Analysis</span>
+            </a>
+            
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="produksi.html">
+                    <i class="fas fa-arrow-left me-1"></i>Kembali
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid main-content">
+        <!-- Header -->
+        <div class="dashboard-header">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <h3><i class="fas fa-chart-line me-2"></i>Pivot Analysis Produksi</h3>
+                    <p class="text-muted mb-0">Komparasi antar PT, divisi, dan periode waktu</p>
+                </div>
+                <div class="col-md-6 text-end">
+                    <button class="btn btn-outline-primary me-2" onclick="refreshAnalysis()">
+                        <i class="fas fa-sync-alt me-1"></i>Refresh
+                    </button>
+                    <button class="btn btn-success" onclick="exportAnalysis()">
+                        <i class="fas fa-download me-1"></i>Export
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Analysis Controls -->
+        <div class="filter-card">
+            <h5 class="mb-3"><i class="fas fa-sliders-h me-2"></i>Pengaturan Analisis</h5>
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Periode Analisis</label>
+                    <select class="form-select" id="periodType">
+                        <option value="monthly">Bulanan</option>
+                        <option value="quarterly">Kuartalan</option>
+                        <option value="yearly">Tahunan</option>
+                        <option value="custom">Custom Range</option>
+                    </select>
+                </div>
+                <div class="col-md-3" id="customDateRange" style="display: none;">
+                    <label class="form-label">Rentang Tanggal</label>
+                    <div class="row g-1">
+                        <div class="col-6">
+                            <input type="date" class="form-control form-control-sm" id="startDate">
+                        </div>
+                        <div class="col-6">
+                            <input type="date" class="form-control form-control-sm" id="endDate">
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Metrik Utama</label>
+                    <select class="form-select" id="primaryMetric">
+                        <option value="tonase">Tonase Produksi</option>
+                        <option value="jjg">Jumlah JJG</option>
+                        <option value="akp">AKP</option>
+                        <option value="bjr">BJR</option>
+                        <option value="output_ha">Output/Ha</option>
+                        <option value="output_hk">Output/HK</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Tipe Visualisasi</label>
+                    <select class="form-select" id="chartType">
+                        <option value="bar">Bar Chart</option>
+                        <option value="line">Line Chart</option>
+                        <option value="heatmap">Heatmap</option>
+                        <option value="scatter">Scatter Plot</option>
+                        <option value="pivot">Pivot Table</option>
+                    </select>
+                </div>
+            </div>
+            <div class="row mt-3">
+                <div class="col-12">
+                    <button class="btn btn-primary" onclick="generateAnalysis()">
+                        <i class="fas fa-chart-bar me-1"></i>Generate Analysis
+                    </button>
+                    <button class="btn btn-outline-secondary ms-2" onclick="resetAnalysis()">
+                        <i class="fas fa-undo me-1"></i>Reset
+                    </button>
+                    <button class="btn btn-outline-info ms-2" onclick="saveTemplate()">
+                        <i class="fas fa-save me-1"></i>Simpan Template
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Analysis Buttons -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0"><i class="fas fa-bolt me-2"></i>Quick Analysis</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="btn-group-vertical btn-group-sm d-md-none" role="group">
+                            <button class="btn btn-outline-primary mb-1" onclick="quickAnalysis('kebun_comparison')">
+                                <i class="fas fa-balance-scale me-1"></i>Perbandingan Kebun
+                            </button>
+                            <button class="btn btn-outline-success mb-1" onclick="quickAnalysis('divisi_performance')">
+                                <i class="fas fa-chart-line me-1"></i>Performa Divisi
+                            </button>
+                            <button class="btn btn-outline-info mb-1" onclick="quickAnalysis('monthly_trend')">
+                                <i class="fas fa-calendar-alt me-1"></i>Trend Bulanan
+                            </button>
+                            <button class="btn btn-outline-warning mb-1" onclick="quickAnalysis('efficiency_analysis')">
+                                <i class="fas fa-cogs me-1"></i>Analisis Efisiensi
+                            </button>
+                        </div>
+                        <div class="d-none d-md-block">
+                            <button class="btn btn-outline-primary me-2" onclick="quickAnalysis('kebun_comparison')">
+                                <i class="fas fa-balance-scale me-1"></i>Perbandingan Kebun
+                            </button>
+                            <button class="btn btn-outline-success me-2" onclick="quickAnalysis('divisi_performance')">
+                                <i class="fas fa-chart-line me-1"></i>Performa Divisi
+                            </button>
+                            <button class="btn btn-outline-info me-2" onclick="quickAnalysis('monthly_trend')">
+                                <i class="fas fa-calendar-alt me-1"></i>Trend Bulanan
+                            </button>
+                            <button class="btn btn-outline-warning me-2" onclick="quickAnalysis('efficiency_analysis')">
+                                <i class="fas fa-cogs me-1"></i>Analisis Efisiensi
+                            </button>
+                            <button class="btn btn-outline-secondary" onclick="quickAnalysis('budget_variance')">
+                                <i class="fas fa-calculator me-1"></i>Varians Budget
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Analysis Results -->
+        <div class="row">
+            <!-- Main Chart Area -->
+            <div class="col-lg-8">
+                <div class="chart-card">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 id="chartTitle"><i class="fas fa-chart-bar me-2"></i>Analysis Chart</h5>
+                        <div class="btn-group btn-group-sm" role="group">
+                            <button class="btn btn-outline-primary" onclick="toggleFullscreen()">
+                                <i class="fas fa-expand"></i>
+                            </button>
+                            <button class="btn btn-outline-success" onclick="downloadChart()">
+                                <i class="fas fa-download"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="chartContainer">
+                        <canvas id="analysisChart" height="400"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analysis Summary -->
+            <div class="col-lg-4">
+                <div class="chart-card">
+                    <h5 class="mb-3"><i class="fas fa-info-circle me-2"></i>Analysis Summary</h5>
+                    <div id="analysisSummary">
+                        <div class="text-center text-muted">
+                            <i class="fas fa-chart-bar fa-3x mb-3"></i>
+                            <p>Pilih analisis untuk melihat ringkasan</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Key Insights -->
+                <div class="chart-card mt-3">
+                    <h5 class="mb-3"><i class="fas fa-lightbulb me-2"></i>Key Insights</h5>
+                    <div id="keyInsights">
+                        <div class="text-center text-muted">
+                            <i class="fas fa-lightbulb fa-2x mb-3"></i>
+                            <p>Insights akan muncul setelah analisis</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pivot Table Container -->
+        <div class="row mt-4" id="pivotTableContainer" style="display: none;">
+            <div class="col-12">
+                <div class="table-card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-table me-2"></i>Interactive Pivot Table</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="pivotTable"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Detailed Data Table -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="table-card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="fas fa-database me-2"></i>Detailed Data</h5>
+                        <div>
+                            <button class="btn btn-sm btn-outline-primary" onclick="toggleDataTable()">
+                                <i class="fas fa-eye me-1"></i>Toggle View
+                            </button>
+                            <button class="btn btn-sm btn-outline-success" onclick="exportDetailedData()">
+                                <i class="fas fa-file-excel me-1"></i>Export
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body" id="detailedDataContainer">
+                        <div class="table-responsive">
+                            <table class="table table-hover" id="detailedDataTable">
+                                <thead>
+                                    <tr>
+                                        <th>Tanggal</th>
+                                        <th>Kebun</th>
+                                        <th>Divisi</th>
+                                        <th>Tonase</th>
+                                        <th>JJG</th>
+                                        <th>Luas</th>
+                                        <th>TK</th>
+                                        <th>AKP</th>
+                                        <th>BJR</th>
+                                        <th>Output/Ha</th>
+                                        <th>Output/HK</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Data will be loaded via JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Save Template Modal -->
+    <div class="modal fade" id="templateModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Simpan Template Analisis</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Nama Template</label>
+                        <input type="text" class="form-control" id="templateName" placeholder="Masukkan nama template">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Deskripsi</label>
+                        <textarea class="form-control" id="templateDescription" rows="3" placeholder="Deskripsi template (opsional)"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-primary" onclick="saveAnalysisTemplate()">Simpan</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <script src="https://unpkg.com/pivottable/dist/pivot.min.js"></script>
+    <script src="js/dashboard_pivot.js"></script>
+</body>
+</html>
