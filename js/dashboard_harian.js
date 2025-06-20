@@ -1,8 +1,13 @@
+<<<<<<< HEAD
 // Advanced Dashboard Harian functionality - Adopsi dari plantation-dashboard
+=======
+// Dashboard Harian functionality
+>>>>>>> 5781cb1529a94802cc9a79f6b48d25d517be3804
 class DailyDashboard {
     constructor() {
         this.productionData = [];
         this.filteredData = [];
+<<<<<<< HEAD
         this.masterData = {};
         this.kebunDivisiMap = {};
         this.charts = {};
@@ -81,6 +86,17 @@ class DailyDashboard {
         }
 
         return await response.json();
+=======
+        this.charts = {};
+        this.dataTable = null;
+        this.initializeDashboard();
+    }
+
+    initializeDashboard() {
+        this.setDefaultDates();
+        this.initializeEventListeners();
+        this.loadDashboardData();
+>>>>>>> 5781cb1529a94802cc9a79f6b48d25d517be3804
     }
 
     setDefaultDates() {
@@ -105,6 +121,7 @@ class DailyDashboard {
 
     async loadDashboardData() {
         try {
+<<<<<<< HEAD
             this.showLoading(true);
             
             const filters = this.getFilters();
@@ -130,11 +147,29 @@ class DailyDashboard {
             this.showAlert('Gagal memuat data dashboard: ' + error.message, 'danger');
             // Load demo data as fallback
             await this.loadDemoData();
+=======
+            // Show loading state
+            this.showLoading(true);
+            
+            // Simulate API call to Google Sheets
+            this.productionData = await this.fetchProductionData();
+            this.filteredData = [...this.productionData];
+            
+            // Update dashboard
+            this.updateSummaryCards();
+            this.renderCharts();
+            this.renderDataTable();
+            
+        } catch (error) {
+            console.error('Error loading dashboard data:', error);
+            this.showAlert('Gagal memuat data dashboard', 'danger');
+>>>>>>> 5781cb1529a94802cc9a79f6b48d25d517be3804
         } finally {
             this.showLoading(false);
         }
     }
 
+<<<<<<< HEAD
     getFilters() {
         return {
             startDate: document.getElementById('startDate').value,
@@ -199,13 +234,19 @@ class DailyDashboard {
         `;
     }
 
+=======
+>>>>>>> 5781cb1529a94802cc9a79f6b48d25d517be3804
     async fetchProductionData() {
         // Simulate API delay
         await new Promise(resolve => setTimeout(resolve, 1000));
         
         // Generate demo data
         const kebunList = ['PT. PAL', 'PT. LSP RS', 'PT. LSP PR', 'CANDIMAS', 'PT. HSBS'];
+<<<<<<< HEAD
         const divisiList = ['Divisi 1', 'Divisi 2', 'Divisi 3', 'Divisi 4'];
+=======
+        const divisiList = ['Divisi 1', 'Divisi 2', 'Divisi 3', 'Divisi 4', 'INTI', 'PLASMA'];
+>>>>>>> 5781cb1529a94802cc9a79f6b48d25d517be3804
         const data = [];
         
         for (let i = 0; i < 30; i++) {
