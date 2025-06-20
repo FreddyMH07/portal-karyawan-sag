@@ -24,7 +24,7 @@ const CONFIG = {
     APP: {
         NAME: 'Portal Karyawan SAG',
         VERSION: '3.0.0',
-        COMPANY: 'PT Sahabat Agro Group',
+        COMPANY: 'PT Sawit Asahan Graha',
         SUPPORT_EMAIL: 'it@sag.co.id'
     },
     

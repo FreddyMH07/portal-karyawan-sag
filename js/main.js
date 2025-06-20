@@ -51,11 +51,21 @@ async function callAPI(action, data = {}) {
         
         // Handle specific CORS errors
         if (error.message.includes('CORS') || error.message.includes('Failed to fetch')) {
-            return {
-                success: false,
-                error: 'Koneksi ke server bermasalah. Silakan coba lagi atau hubungi administrator.',
-                technical_error: error.message
-            };
+            console.warn('CORS error detected, trying alternative method...');
+            
+            // Try alternative XHR method
+            try {
+                const xhrResult = await callAPIXHR(action, data);
+                return xhrResult;
+            } catch (xhrError) {
+                console.error('XHR method also failed:', xhrError);
+                return {
+                    success: false,
+                    error: 'Koneksi ke server bermasalah. Silakan coba lagi atau hubungi administrator.',
+                    technical_error: error.message,
+                    fallback_attempted: true
+                };
+            }
         }
         
         return {

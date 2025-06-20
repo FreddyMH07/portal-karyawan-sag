@@ -69,55 +69,80 @@ class LoginManager {
     }
 
     async authenticateUser(email, password) {
-        // Demo users - replace with actual API call
-        const demoUsers = [
-            {
-                email: 'admin@sahabatagro.co.id',
-                password: 'admin123',
-                name: 'Administrator',
-                role: 'admin',
-                permissions: ['produksi', 'hr', 'umum']
-            },
-            {
-                email: 'produksi@sahabatagro.co.id',
-                password: 'produksi123',
-                name: 'Manager Produksi',
-                role: 'produksi',
-                permissions: ['produksi']
-            },
-            {
-                email: 'hr@sahabatagro.co.id',
-                password: 'hr123',
-                name: 'HR Manager',
-                role: 'hr',
-                permissions: ['hr', 'umum']
-            },
-            {
-                email: 'user@sahabatagro.co.id',
-                password: 'user123',
-                name: 'Karyawan',
-                role: 'user',
-                permissions: ['umum']
+        try {
+            console.log('Attempting login for:', email);
+            
+            // Call actual API
+            const response = await callAPI('login', {
+                email: email,
+                password: password
+            });
+            
+            console.log('Login response:', response);
+            
+            if (response.success) {
+                return {
+                    success: true,
+                    user: response.user
+                };
+            } else {
+                return {
+                    success: false,
+                    message: response.message || 'Login gagal'
+                };
             }
-        ];
-
-        // Simulate network delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
-        const user = demoUsers.find(u => u.email === email && u.password === password);
-        
-        if (user) {
-            return {
-                success: true,
-                user: {
-                    id: Date.now(),
-                    email: user.email,
-                    name: user.name,
-                    role: user.role,
-                    permissions: user.permissions,
-                    loginTime: new Date().toISOString()
+        } catch (error) {
+            console.error('Authentication error:', error);
+            
+            // Fallback to demo users if API fails
+            console.log('API failed, using demo users...');
+            
+            const demoUsers = [
+                {
+                    email: 'admin@sag.com',
+                    password: 'admin123',
+                    name: 'Administrator',
+                    role: 'admin',
+                    permissions: ['DATA_HARIAN', 'BOOKING', 'ABSENSI', 'KPI', 'ASSET', 'MASTER_DATA', 'USERS']
+                },
+                {
+                    email: 'manager@sag.com',
+                    password: 'manager123',
+                    name: 'Manager',
+                    role: 'manager',
+                    permissions: ['DATA_HARIAN', 'BOOKING', 'ABSENSI', 'KPI', 'ASSET']
+                },
+                {
+                    email: 'staff@sag.com',
+                    password: 'staff123',
+                    name: 'Staff',
+                    role: 'staff',
+                    permissions: ['DATA_HARIAN', 'BOOKING']
                 }
-            };
+            ];
+
+            const user = demoUsers.find(u => u.email === email && u.password === password);
+            
+            if (user) {
+                return {
+                    success: true,
+                    user: {
+                        id: Date.now(),
+                        email: user.email,
+                        name: user.name,
+                        role: user.role,
+                        permissions: user.permissions,
+                        loginTime: new Date().toISOString()
+                    }
+                };
+            } else {
+                return {
+                    success: false,
+                    message: 'Email atau password salah'
+                };
+            }
+        }
+    }
         } else {
             return {
                 success: false,

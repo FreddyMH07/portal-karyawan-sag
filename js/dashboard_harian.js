@@ -303,6 +303,29 @@ class DailyDashboard {
         }
     }
 
+    // MISSING FUNCTION - Added resetFilters
+    resetFilters() {
+        // Reset all filter inputs
+        document.getElementById('startDate').value = '';
+        document.getElementById('endDate').value = '';
+        document.getElementById('kebunFilter').value = '';
+        document.getElementById('divisiFilter').value = '';
+        
+        // Reset to default dates
+        this.setDefaultDates();
+        
+        // Clear divisi dropdown
+        const divisiSelect = document.getElementById('divisiFilter');
+        if (divisiSelect) {
+            divisiSelect.innerHTML = '<option value="">Semua Divisi</option>';
+        }
+        
+        // Reload data
+        this.loadDashboardData();
+        
+        showAlert('Filter telah direset', 'info', 2000);
+    }
+
     exportData() {
         if (this.filteredData.length === 0) {
             showAlert('Tidak ada data untuk diekspor', 'warning');
@@ -318,23 +341,34 @@ class DailyDashboard {
 // Initialize dashboard when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
     if (requireAuth()) {
-        new DailyDashboard();
+        window.dailyDashboard = new DailyDashboard();
     }
 });
 
-// Global function for button onclick handlers
+// Global functions for button onclick handlers
 function applyFilters() {
     if (window.dailyDashboard) {
         window.dailyDashboard.applyFilters();
     }
 }
 
-// Store dashboard instance globally
-window.addEventListener('load', function() {
-    if (window.DailyDashboard) {
-        window.dailyDashboard = new DailyDashboard();
+function resetFilters() {
+    if (window.dailyDashboard) {
+        window.dailyDashboard.resetFilters();
     }
-});
+}
+
+function exportData() {
+    if (window.dailyDashboard) {
+        window.dailyDashboard.exportData();
+    }
+}
+
+function refreshData() {
+    if (window.dailyDashboard) {
+        window.dailyDashboard.loadDashboardData();
+    }
+}
 
     updateDivisiDropdown(selectedKebun) {
         const divisiSelect = document.getElementById('divisiFilter');
