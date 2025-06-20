@@ -3,9 +3,8 @@ const CONFIG = {
     // Google Sheets Configuration
     GOOGLE_SHEETS_ID: '1UMA4dHaqG6dmJ0kWTq7NPz6xmqnTPSqJpMu4ws7TFjs',
     
-    // Google Apps Script Web App URL
-    // Replace YOUR_SCRIPT_ID dengan actual script ID setelah deploy
-    API_BASE_URL: 'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec',
+    // Google Apps Script Web App URL - UPDATED with correct URL
+    API_BASE_URL: 'https://script.google.com/macros/s/AKfycbyvJjfEG_99m2fwv4NeKgZM-2O0zSqmCdqSJJMuUVdDJXE0UHa97UUAzB2NoZuaD81s1w/exec',
     
     // Google OAuth Client ID (untuk Google Sign-In)
     GOOGLE_CLIENT_ID: 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com',
@@ -24,9 +23,9 @@ const CONFIG = {
     // Application Settings
     APP: {
         NAME: 'Portal Karyawan SAG',
-        VERSION: '2.0.0',
+        VERSION: '3.0.0',
         COMPANY: 'PT Sahabat Agro Group',
-        SUPPORT_EMAIL: 'it@sahabatagro.co.id'
+        SUPPORT_EMAIL: 'it@sag.co.id'
     },
     
     // Default Values
@@ -83,7 +82,11 @@ const CONFIG = {
         BOOKING_REMINDER: 30, // minutes before
         KPI_DEADLINE: 3, // days before
         ASSET_RETURN: 1 // days before
-    }
+    },
+    
+    // Debug and CORS settings
+    DEBUG: true,
+    CORS_MODE: 'cors' // Handle CORS properly
 };
 
 // Export configuration for use in other modules

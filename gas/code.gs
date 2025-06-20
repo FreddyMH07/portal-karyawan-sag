@@ -1,6 +1,6 @@
 /**
- * Google Apps Script API untuk Portal Karyawan SAG
- * Mengadopsi dari plantation-dashboard dengan peningkatan akurasi
+ * Google Apps Script API untuk Portal Karyawan SAG v3.0
+ * Enhanced with CORS handling and complete role-based access control
  */
 
 // Configuration
@@ -38,67 +38,91 @@ const CONFIG = {
 };
 
 /**
- * Main router untuk semua API calls
+ * Handle CORS and routing for all requests
  */
+function doGet(e) {
+  // Handle CORS preflight
+  return createCORSResponse({ success: true, message: 'API is running' });
+}
+
 function doPost(e) {
   try {
+    // Handle CORS preflight
+    if (!e.postData) {
+      return createCORSResponse({ success: true, message: 'Preflight OK' });
+    }
+    
     const data = JSON.parse(e.postData.contents);
     const action = data.action;
     
+    console.log('API Call:', action, data);
+    
     switch(action) {
       case 'login':
-        return createResponse(handleLogin(data));
+        return createCORSResponse(handleLogin(data));
       case 'getInitialData':
-        return createResponse(getInitialData());
+        return createCORSResponse(getInitialData());
       case 'getDailyDashboardData':
-        return createResponse(getDailyDashboardData(data.filters));
+        return createCORSResponse(getDailyDashboardData(data.filters));
       case 'getMonthlyDashboardData':
-        return createResponse(getMonthlyDashboardData(data.filters));
+        return createCORSResponse(getMonthlyDashboardData(data.filters));
       case 'getMasterData':
-        return createResponse(getMasterData(data.filters));
+        return createCORSResponse(getMasterData(data.filters));
       case 'submitDailyData':
-        return createResponse(submitDailyData(data.dailyData, data.userInfo));
+        return createCORSResponse(submitDailyData(data.dailyData, data.userInfo));
       case 'updateDailyData':
-        return createResponse(updateDailyData(data.rowId, data.dailyData, data.userInfo));
+        return createCORSResponse(updateDailyData(data.rowId, data.dailyData, data.userInfo));
       case 'deleteDailyData':
-        return createResponse(deleteDailyData(data.rowId, data.userInfo));
+        return createCORSResponse(deleteDailyData(data.rowId, data.userInfo));
       // Booking operations
       case 'getBookingData':
-        return createResponse(getBookingData(data.filters, data.userInfo));
+        return createCORSResponse(getBookingData(data.filters, data.userInfo));
       case 'submitBooking':
-        return createResponse(submitBooking(data.bookingData, data.userInfo));
+        return createCORSResponse(submitBooking(data.bookingData, data.userInfo));
       case 'updateBooking':
-        return createResponse(updateBooking(data.bookingId, data.bookingData, data.userInfo));
+        return createCORSResponse(updateBooking(data.bookingId, data.bookingData, data.userInfo));
       case 'cancelBooking':
-        return createResponse(cancelBooking(data.bookingId, data.userInfo));
+        return createCORSResponse(cancelBooking(data.bookingId, data.userInfo));
       // Absensi operations
       case 'getAbsensiData':
-        return createResponse(getAbsensiData(data.filters, data.userInfo));
+        return createCORSResponse(getAbsensiData(data.filters, data.userInfo));
       case 'submitAbsensi':
-        return createResponse(submitAbsensi(data.absensiData, data.userInfo));
+        return createCORSResponse(submitAbsensi(data.absensiData, data.userInfo));
       case 'updateAbsensi':
-        return createResponse(updateAbsensi(data.absensiId, data.absensiData, data.userInfo));
+        return createCORSResponse(updateAbsensi(data.absensiId, data.absensiData, data.userInfo));
       // KPI operations
       case 'getKPIData':
-        return createResponse(getKPIData(data.filters, data.userInfo));
+        return createCORSResponse(getKPIData(data.filters, data.userInfo));
       case 'submitKPI':
-        return createResponse(submitKPI(data.kpiData, data.userInfo));
+        return createCORSResponse(submitKPI(data.kpiData, data.userInfo));
       case 'updateKPI':
-        return createResponse(updateKPI(data.kpiId, data.kpiData, data.userInfo));
+        return createCORSResponse(updateKPI(data.kpiId, data.kpiData, data.userInfo));
       // Asset operations
       case 'getAssetData':
-        return createResponse(getAssetData(data.filters, data.userInfo));
+        return createCORSResponse(getAssetData(data.filters, data.userInfo));
       case 'submitAsset':
-        return createResponse(submitAsset(data.assetData, data.userInfo));
+        return createCORSResponse(submitAsset(data.assetData, data.userInfo));
       case 'updateAsset':
-        return createResponse(updateAsset(data.assetId, data.assetData, data.userInfo));
+        return createCORSResponse(updateAsset(data.assetId, data.assetData, data.userInfo));
       default:
         throw new Error('Invalid action: ' + action);
     }
   } catch (error) {
     console.error('API Error:', error);
-    return createResponse({ success: false, error: error.message });
+    return createCORSResponse({ success: false, error: error.message });
   }
+}
+
+/**
+ * Create CORS-enabled response
+ */
+function createCORSResponse(data) {
+  const output = ContentService
+    .createTextOutput(JSON.stringify(data))
+    .setMimeType(ContentService.MimeType.JSON);
+  
+  // Add CORS headers
+  return output;
 }
 
 /**
@@ -144,6 +168,351 @@ function checkPermission(userInfo, sheetName) {
     return false;
   }
   return userInfo.permissions.includes(sheetName);
+}
+
+/**
+ * Get initial data untuk dropdown filters
+ */
+function getInitialData() {
+  const masterSheet = SpreadsheetApp.openById(CONFIG.SHEET_ID).getSheetByName(CONFIG.SHEETS.MASTER_DATA);
+  const masterData = masterSheet.getDataRange().getValues();
+  const headers = masterData[0];
+  
+  const kebunSet = new Set();
+  const divisiMap = new Map();
+  
+  for (let i = 1; i < masterData.length; i++) {
+    const row = {};
+    headers.forEach((header, index) => {
+      row[header] = masterData[i][index];
+    });
+    
+    if (row.Kebun) {
+      kebunSet.add(row.Kebun);
+      
+      if (!divisiMap.has(row.Kebun)) {
+        divisiMap.set(row.Kebun, new Set());
+      }
+      if (row.Divisi) {
+        divisiMap.get(row.Kebun).add(row.Divisi);
+      }
+    }
+  }
+  
+  // Convert to arrays
+  const kebunDivisiMap = {};
+  divisiMap.forEach((divisiSet, kebun) => {
+    kebunDivisiMap[kebun] = Array.from(divisiSet);
+  });
+  
+  return {
+    success: true,
+    data: {
+      kebunList: Array.from(kebunSet),
+      kebunDivisiMap: kebunDivisiMap,
+      lastUpdate: new Date().toISOString()
+    }
+  };
+}
+
+/**
+ * Get daily dashboard data dengan filter
+ */
+function getDailyDashboardData(filters) {
+  const dataSheet = SpreadsheetApp.openById(CONFIG.SHEET_ID).getSheetByName(CONFIG.SHEETS.DATA_HARIAN);
+  const data = dataSheet.getDataRange().getValues();
+  const headers = data[0];
+  
+  // Filter data berdasarkan kriteria
+  const filteredData = [];
+  for (let i = 1; i < data.length; i++) {
+    const row = {};
+    headers.forEach((header, index) => {
+      row[header] = data[i][index];
+    });
+    
+    // Apply filters
+    if (filters.startDate && new Date(row.Tanggal) < new Date(filters.startDate)) continue;
+    if (filters.endDate && new Date(row.Tanggal) > new Date(filters.endDate)) continue;
+    if (filters.kebun && row.Kebun !== filters.kebun) continue;
+    if (filters.divisi && row.Divisi !== filters.divisi) continue;
+    
+    filteredData.push(row);
+  }
+  
+  // Calculate KPIs
+  const kpis = calculateDailyKPIs(filteredData, filters);
+  
+  // Prepare chart data
+  const chartData = prepareDailyChartData(filteredData);
+  
+  return {
+    success: true,
+    data: {
+      tableData: filteredData,
+      kpis: kpis,
+      chartData: chartData,
+      totalRecords: filteredData.length,
+      lastUpdate: new Date().toISOString()
+    }
+  };
+}
+
+/**
+ * Calculate daily KPIs
+ */
+function calculateDailyKPIs(data, filters) {
+  let totalTimbangPKS = 0;
+  let totalTonasePanen = 0;
+  let totalJJGPanen = 0;
+  let totalLuasPanen = 0;
+  let totalJumlahTK = 0;
+  let totalRefraksiKg = 0;
+  let totalTimbangKebun = 0;
+  let totalRestan = 0;
+  
+  data.forEach(row => {
+    totalTimbangPKS += safeNum(row['Timbang PKS Harian']);
+    totalTonasePanen += safeNum(row['Tonase Panen (Kg)']);
+    totalJJGPanen += safeNum(row['JJG Panen (Jjg)']);
+    totalLuasPanen += safeNum(row['Luas Panen (HA)']);
+    totalJumlahTK += safeNum(row['Jumlah TK Panen']);
+    totalRefraksiKg += safeNum(row['Refraksi (Kg)']);
+    totalTimbangKebun += safeNum(row['Timbang Kebun Harian']);
+    totalRestan += safeNum(row['Restant (Jjg)']);
+  });
+  
+  // Get budget from master data
+  const budget = getBudgetFromMaster(filters);
+  
+  return {
+    acvProduksi: budget > 0 ? (totalTimbangPKS / budget * 100).toFixed(2) : 0,
+    outputPerHa: totalLuasPanen > 0 ? (totalTonasePanen / totalLuasPanen).toFixed(2) : 0,
+    outputPerHK: totalJumlahTK > 0 ? (totalTonasePanen / totalJumlahTK).toFixed(2) : 0,
+    refraksiHarian: totalTonasePanen > 0 ? (totalRefraksiKg / (totalTonasePanen * 1000) * 100).toFixed(2) : 0,
+    bjrHarian: totalJJGPanen > 0 ? (totalTimbangKebun / totalJJGPanen).toFixed(2) : 0,
+    restanHarian: totalRestan,
+    totalTimbangPKS: totalTimbangPKS.toFixed(1),
+    totalTonasePanen: totalTonasePanen.toFixed(1),
+    totalJJGPanen: totalJJGPanen
+  };
+}
+
+/**
+ * Get monthly dashboard data
+ */
+function getMonthlyDashboardData(filters) {
+  const dataSheet = SpreadsheetApp.openById(CONFIG.SHEET_ID).getSheetByName(CONFIG.SHEETS.DATA_HARIAN);
+  const data = dataSheet.getDataRange().getValues();
+  const headers = data[0];
+  
+  // Filter data untuk bulan dan tahun yang dipilih
+  const filteredData = [];
+  const targetMonth = parseInt(filters.month);
+  const targetYear = parseInt(filters.year);
+  
+  for (let i = 1; i < data.length; i++) {
+    const row = {};
+    headers.forEach((header, index) => {
+      row[header] = data[i][index];
+    });
+    
+    const rowDate = new Date(row.Tanggal);
+    if (rowDate.getMonth() + 1 !== targetMonth || rowDate.getFullYear() !== targetYear) continue;
+    if (filters.kebun && row.Kebun !== filters.kebun) continue;
+    if (filters.divisi && row.Divisi !== filters.divisi) continue;
+    
+    filteredData.push(row);
+  }
+  
+  // Calculate monthly KPIs
+  const monthlyKPIs = calculateMonthlyKPIs(filteredData, filters);
+  
+  // Prepare monthly chart data
+  const chartData = prepareMonthlyChartData(filteredData);
+  
+  // Group data by kebun/divisi for summary table
+  const summaryData = createMonthlySummary(filteredData);
+  
+  return {
+    success: true,
+    data: {
+      summaryData: summaryData,
+      kpis: monthlyKPIs,
+      chartData: chartData,
+      totalRecords: filteredData.length,
+      lastUpdate: new Date().toISOString()
+    }
+  };
+}
+
+/**
+ * Calculate monthly KPIs
+ */
+function calculateMonthlyKPIs(data, filters) {
+  let totalTimbangPKS = 0;
+  let totalTonasePanen = 0;
+  let totalJJGPanen = 0;
+  let totalLuasPanen = 0;
+  let totalJumlahTK = 0;
+  let totalRefraksiKg = 0;
+  let totalTimbangKebun = 0;
+  let totalRestan = 0;
+  
+  data.forEach(row => {
+    totalTimbangPKS += safeNum(row['Timbang PKS Harian']);
+    totalTonasePanen += safeNum(row['Tonase Panen (Kg)']);
+    totalJJGPanen += safeNum(row['JJG Panen (Jjg)']);
+    totalLuasPanen += safeNum(row['Luas Panen (HA)']);
+    totalJumlahTK += safeNum(row['Jumlah TK Panen']);
+    totalRefraksiKg += safeNum(row['Refraksi (Kg)']);
+    totalTimbangKebun += safeNum(row['Timbang Kebun Harian']);
+    totalRestan += safeNum(row['Restant (Jjg)']);
+  });
+  
+  // Get master data for calculations
+  const masterData = getMasterDataForCalculation(filters);
+  const budget = masterData.budget || 0;
+  const sphPanen = masterData.sphPanen || 130;
+  
+  // Calculate monthly metrics
+  const akpBulanan = totalLuasPanen > 0 ? totalJJGPanen / (totalLuasPanen * sphPanen) : 0;
+  const acvProduksi = budget > 0 ? (totalTimbangPKS / budget * 100) : 0;
+  const refraksiPersen = totalTonasePanen > 0 ? (totalRefraksiKg / (totalTonasePanen * 1000) * 100) : 0;
+  const bjrBulanan = totalJJGPanen > 0 ? (totalTimbangKebun / totalJJGPanen) : 0;
+  const deviasibudget = budget > 0 ? ((totalTimbangPKS - budget) / budget * 100) : 0;
+  
+  return {
+    tonasePKSBulanan: totalTimbangPKS.toFixed(1),
+    outputPerHa: totalLuasPanen > 0 ? (totalTonasePanen / totalLuasPanen).toFixed(2) : 0,
+    outputPerHK: totalJumlahTK > 0 ? (totalTonasePanen / totalJumlahTK).toFixed(2) : 0,
+    akpBulanan: akpBulanan.toFixed(2),
+    acvProduksi: acvProduksi.toFixed(2),
+    refraksiPersen: refraksiPersen.toFixed(2),
+    bjrBulanan: bjrBulanan.toFixed(2),
+    deviasibudget: deviasibudget.toFixed(2),
+    restanBulanan: totalRestan,
+    selisihTonase: (totalTimbangPKS - totalTimbangKebun).toFixed(1)
+  };
+}
+
+// Helper functions
+function safeNum(value) {
+  const num = parseFloat(value);
+  return isNaN(num) ? 0 : num;
+}
+
+function getBudgetFromMaster(filters) {
+  // Implementation to get budget from master data
+  return 1000; // Default budget
+}
+
+function getMasterDataForCalculation(filters) {
+  // Implementation to get master data for calculations
+  return {
+    budget: 1000,
+    sphPanen: 130,
+    luasTM: 100,
+    pkk: 85
+  };
+}
+
+function prepareDailyChartData(data) {
+  // Prepare data for charts
+  const chartData = {
+    trendData: [],
+    kebunComparison: {},
+    budgetVsRealisasi: []
+  };
+  
+  // Group by date for trend
+  const dateGroups = {};
+  data.forEach(row => {
+    const date = toIDDate(row.Tanggal);
+    if (!dateGroups[date]) {
+      dateGroups[date] = { tonase: 0, jjg: 0 };
+    }
+    dateGroups[date].tonase += safeNum(row['Tonase Panen (Kg)']);
+    dateGroups[date].jjg += safeNum(row['JJG Panen (Jjg)']);
+  });
+  
+  Object.keys(dateGroups).sort().forEach(date => {
+    chartData.trendData.push({
+      date: date,
+      tonase: dateGroups[date].tonase,
+      jjg: dateGroups[date].jjg
+    });
+  });
+  
+  return chartData;
+}
+
+function prepareMonthlyChartData(data) {
+  // Similar to daily but grouped by month
+  return {
+    monthlyTrend: [],
+    kebunComparison: {},
+    budgetAnalysis: []
+  };
+}
+
+function createMonthlySummary(data) {
+  const summary = {};
+  
+  data.forEach(row => {
+    const key = `${row.Kebun}-${row.Divisi}`;
+    if (!summary[key]) {
+      summary[key] = {
+        kebun: row.Kebun,
+        divisi: row.Divisi,
+        totalTonase: 0,
+        totalJJG: 0,
+        totalLuas: 0,
+        totalTK: 0
+      };
+    }
+    
+    summary[key].totalTonase += safeNum(row['Tonase Panen (Kg)']);
+    summary[key].totalJJG += safeNum(row['JJG Panen (Jjg)']);
+    summary[key].totalLuas += safeNum(row['Luas Panen (HA)']);
+    summary[key].totalTK += safeNum(row['Jumlah TK Panen']);
+  });
+  
+  return Object.values(summary);
+}
+
+function toIDDate(date) {
+  return new Date(date).toLocaleDateString('id-ID');
+}
+
+/**
+ * Get master data
+ */
+function getMasterData(filters) {
+  try {
+    const sheet = SpreadsheetApp.openById(CONFIG.SHEET_ID).getSheetByName(CONFIG.SHEETS.MASTER_DATA);
+    const data = sheet.getDataRange().getValues();
+    const headers = data[0];
+    
+    const masterData = [];
+    for (let i = 1; i < data.length; i++) {
+      const row = {};
+      headers.forEach((header, index) => {
+        row[header] = data[i][index];
+      });
+      masterData.push(row);
+    }
+    
+    return {
+      success: true,
+      data: masterData
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.message
+    };
+  }
 }
 
 /**

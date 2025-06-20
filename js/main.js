@@ -1,253 +1,397 @@
-// Main portal functionality
-class PortalManager {
-    constructor() {
-        this.currentUser = null;
-        this.selectedPortal = null;
-        this.initializePortal();
+/**
+ * Main JavaScript functions untuk Portal Karyawan SAG v3.0
+ * Enhanced with CORS handling and error management
+ */
+
+// Global variables
+let currentUser = null;
+let isLoading = false;
+
+/**
+ * Enhanced API call function with CORS handling
+ */
+async function callAPI(action, data = {}) {
+    if (isLoading) {
+        console.log('API call in progress, please wait...');
+        return { success: false, message: 'Request in progress' };
     }
-
-    initializePortal() {
-        this.checkAuthentication();
-        this.loadUserInfo();
-        this.initializeEventListeners();
-        this.updateDateTime();
-        this.loadQuickStats();
-        
-        // Update time every minute
-        setInterval(() => this.updateDateTime(), 60000);
-    }
-
-    checkAuthentication() {
-        const session = localStorage.getItem('sag_session');
-        const tempSession = sessionStorage.getItem('sag_temp_session');
-        
-        if (!session && !tempSession) {
-            window.location.href = 'login.html';
-            return;
-        }
-
-        try {
-            const sessionData = JSON.parse(session || tempSession);
-            this.currentUser = sessionData.user;
-            
-            // Check session expiry
-            const expiry = localStorage.getItem('sag_session_expiry');
-            if (expiry && Date.now() > parseInt(expiry)) {
-                this.logout();
-                return;
-            }
-        } catch (error) {
-            console.error('Session parsing error:', error);
-            this.logout();
-        }
-    }
-
-    loadUserInfo() {
-        if (this.currentUser) {
-            document.getElementById('userName').textContent = this.currentUser.name;
-        }
-    }
-
-    initializeEventListeners() {
-        // Logout button
-        document.getElementById('logoutBtn').addEventListener('click', (e) => {
-            e.preventDefault();
-            this.logout();
-        });
-
-        // Portal access confirmation
-        document.getElementById('confirmAccess').addEventListener('click', () => {
-            this.confirmPortalAccess();
-        });
-
-        // Portal cards click handlers are set via onclick in HTML
-        window.accessPortal = (portalType) => {
-            this.requestPortalAccess(portalType);
-        };
-    }
-
-    updateDateTime() {
-        const now = new Date();
-        const options = { 
-            weekday: 'long', 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric' 
+    
+    isLoading = true;
+    showLoading(true);
+    
+    try {
+        const payload = {
+            action: action,
+            ...data,
+            timestamp: new Date().toISOString()
         };
         
-        document.getElementById('currentDate').textContent = 
-            now.toLocaleDateString('id-ID', options);
+        console.log('API Call:', action, payload);
         
-        document.getElementById('currentTime').textContent = 
-            now.toLocaleTimeString('id-ID', { 
-                hour: '2-digit', 
-                minute: '2-digit',
-                second: '2-digit'
-            });
-    }
-
-    async loadQuickStats() {
-        try {
-            // Simulate API calls for quick stats
-            const stats = await this.fetchQuickStats();
-            
-            document.getElementById('attendanceToday').textContent = stats.attendance;
-            document.getElementById('productionToday').textContent = stats.production;
-            document.getElementById('bookingToday').textContent = stats.booking;
-            document.getElementById('ticketToday').textContent = stats.tickets;
-        } catch (error) {
-            console.error('Error loading quick stats:', error);
+        const response = await fetch(CONFIG.API_BASE_URL, {
+            method: 'POST',
+            mode: 'cors', // Enable CORS
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload)
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
-    }
-
-    async fetchQuickStats() {
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
         
-        // Demo data - replace with actual API calls
+        const result = await response.json();
+        console.log('API Response:', result);
+        
+        return result;
+        
+    } catch (error) {
+        console.error('API call failed:', error);
+        
+        // Handle specific CORS errors
+        if (error.message.includes('CORS') || error.message.includes('Failed to fetch')) {
+            return {
+                success: false,
+                error: 'Koneksi ke server bermasalah. Silakan coba lagi atau hubungi administrator.',
+                technical_error: error.message
+            };
+        }
+        
         return {
-            attendance: Math.floor(Math.random() * 100) + 150,
-            production: (Math.random() * 50 + 20).toFixed(1),
-            booking: Math.floor(Math.random() * 10) + 5,
-            tickets: Math.floor(Math.random() * 20) + 3
+            success: false,
+            error: error.message || 'Terjadi kesalahan tidak dikenal'
         };
+    } finally {
+        isLoading = false;
+        showLoading(false);
     }
+}
 
-    requestPortalAccess(portalType) {
-        this.selectedPortal = portalType;
-        
-        // Check user permissions
-        if (!this.currentUser.permissions.includes(portalType) && this.currentUser.role !== 'admin') {
-            this.showAlert('Anda tidak memiliki akses ke portal ini', 'warning');
-            return;
-        }
-
-        // For production portal, require additional verification
-        if (portalType === 'produksi') {
-            const modal = new bootstrap.Modal(document.getElementById('accessModal'));
-            modal.show();
-        } else {
-            this.redirectToPortal(portalType);
-        }
-    }
-
-    confirmPortalAccess() {
-        const password = document.getElementById('portalPassword').value;
-        
-        if (!password) {
-            this.showAlert('Silakan masukkan password', 'warning');
-            return;
-        }
-
-        // Verify password (demo - replace with actual verification)
-        if (password === 'produksi123' || password === this.currentUser.email.split('@')[0] + '123') {
-            const modal = bootstrap.Modal.getInstance(document.getElementById('accessModal'));
-            modal.hide();
-            
-            this.showAlert('Akses dikonfirmasi! Mengalihkan...', 'success');
-            setTimeout(() => {
-                this.redirectToPortal(this.selectedPortal);
-            }, 1500);
-        } else {
-            this.showAlert('Password salah', 'danger');
-        }
-    }
-
-    redirectToPortal(portalType) {
-        const portalUrls = {
-            'produksi': 'produksi.html',
-            'hr': 'hr.html',
-            'umum': 'umum.html'
+/**
+ * Alternative API call using XMLHttpRequest for better CORS handling
+ */
+function callAPIXHR(action, data = {}) {
+    return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        const payload = {
+            action: action,
+            ...data,
+            timestamp: new Date().toISOString()
         };
-
-        if (portalUrls[portalType]) {
-            window.location.href = portalUrls[portalType];
-        }
-    }
-
-    logout() {
-        // Clear all session data
-        localStorage.removeItem('sag_session');
-        localStorage.removeItem('sag_session_expiry');
-        sessionStorage.removeItem('sag_temp_session');
         
-        // Redirect to login
-        window.location.href = 'login.html';
-    }
+        xhr.open('POST', CONFIG.API_BASE_URL, true);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) {
+                if (xhr.status === 200) {
+                    try {
+                        const result = JSON.parse(xhr.responseText);
+                        resolve(result);
+                    } catch (e) {
+                        reject(new Error('Invalid JSON response'));
+                    }
+                } else {
+                    reject(new Error(`HTTP ${xhr.status}: ${xhr.statusText}`));
+                }
+            }
+        };
+        
+        xhr.onerror = function() {
+            reject(new Error('Network error occurred'));
+        };
+        
+        xhr.send(JSON.stringify(payload));
+    });
+}
 
-    showAlert(message, type) {
-        // Remove existing alerts
-        const existingAlerts = document.querySelectorAll('.alert');
-        existingAlerts.forEach(alert => alert.remove());
-
-        // Create new alert
-        const alertDiv = document.createElement('div');
-        alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
-        alertDiv.style.cssText = 'top: 100px; right: 20px; z-index: 1050; min-width: 300px;';
-        alertDiv.innerHTML = `
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+/**
+ * Show/hide loading indicator
+ */
+function showLoading(show = true) {
+    let loader = document.getElementById('globalLoader');
+    
+    if (!loader) {
+        loader = document.createElement('div');
+        loader.id = 'globalLoader';
+        loader.innerHTML = `
+            <div class="loading-overlay">
+                <div class="loading-spinner">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <div class="mt-2">Memuat data...</div>
+                </div>
+            </div>
         `;
+        loader.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            color: white;
+        `;
+        document.body.appendChild(loader);
+    }
+    
+    loader.style.display = show ? 'flex' : 'none';
+}
 
-        document.body.appendChild(alertDiv);
-
-        // Auto dismiss after 5 seconds
+/**
+ * Show alert messages
+ */
+function showAlert(message, type = 'info', duration = 5000) {
+    // Remove existing alerts
+    const existingAlerts = document.querySelectorAll('.custom-alert');
+    existingAlerts.forEach(alert => alert.remove());
+    
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show custom-alert`;
+    alertDiv.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 10000;
+        min-width: 300px;
+        max-width: 500px;
+    `;
+    
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(alertDiv);
+    
+    // Auto remove after duration
+    if (duration > 0) {
         setTimeout(() => {
             if (alertDiv.parentNode) {
                 alertDiv.remove();
             }
-        }, 5000);
+        }, duration);
     }
 }
 
-// Utility functions
-class Utils {
-    static formatNumber(num) {
-        return new Intl.NumberFormat('id-ID').format(num);
-    }
+/**
+ * Format date to Indonesian format
+ */
+function formatDateID(date) {
+    if (!date) return '';
+    
+    const d = new Date(date);
+    const months = [
+        'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+        'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    ];
+    
+    return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+}
 
-    static formatCurrency(amount) {
-        return new Intl.NumberFormat('id-ID', {
-            style: 'currency',
-            currency: 'IDR'
-        }).format(amount);
-    }
+/**
+ * Format number with thousand separators
+ */
+function formatNumber(num, decimals = 0) {
+    if (num === null || num === undefined || isNaN(num)) return '0';
+    
+    return parseFloat(num).toLocaleString('id-ID', {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals
+    });
+}
 
-    static formatDate(date) {
-        return new Date(date).toLocaleDateString('id-ID');
-    }
+/**
+ * Safe number conversion
+ */
+function safeNumber(value, defaultValue = 0) {
+    const num = parseFloat(value);
+    return isNaN(num) ? defaultValue : num;
+}
 
-    static formatDateTime(date) {
-        return new Date(date).toLocaleString('id-ID');
-    }
-
-    static exportToCSV(data, filename) {
-        const csv = this.convertToCSV(data);
-        const blob = new Blob([csv], { type: 'text/csv' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        a.click();
-        window.URL.revokeObjectURL(url);
-    }
-
-    static convertToCSV(data) {
-        if (!data.length) return '';
-        
-        const headers = Object.keys(data[0]);
-        const csvContent = [
-            headers.join(','),
-            ...data.map(row => headers.map(header => 
-                JSON.stringify(row[header] || '')
-            ).join(','))
-        ].join('\n');
-        
-        return csvContent;
+/**
+ * Get current user from localStorage
+ */
+function getCurrentUser() {
+    try {
+        const userData = localStorage.getItem('currentUser');
+        return userData ? JSON.parse(userData) : null;
+    } catch (error) {
+        console.error('Error getting current user:', error);
+        return null;
     }
 }
 
-// Initialize portal when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    new PortalManager();
+/**
+ * Set current user to localStorage
+ */
+function setCurrentUser(user) {
+    try {
+        localStorage.setItem('currentUser', JSON.stringify(user));
+        currentUser = user;
+    } catch (error) {
+        console.error('Error setting current user:', error);
+    }
+}
+
+/**
+ * Clear current user
+ */
+function clearCurrentUser() {
+    localStorage.removeItem('currentUser');
+    currentUser = null;
+}
+
+/**
+ * Check if user has permission for specific action
+ */
+function hasPermission(permission) {
+    const user = getCurrentUser();
+    if (!user || !user.permissions) return false;
+    
+    return user.permissions.includes(permission) || user.role === 'admin';
+}
+
+/**
+ * Redirect to login if not authenticated
+ */
+function requireAuth() {
+    const user = getCurrentUser();
+    if (!user) {
+        window.location.href = 'login.html';
+        return false;
+    }
+    return true;
+}
+
+/**
+ * Logout function
+ */
+function logout() {
+    clearCurrentUser();
+    showAlert('Anda telah logout', 'success');
+    setTimeout(() => {
+        window.location.href = 'login.html';
+    }, 1000);
+}
+
+/**
+ * Export data to CSV
+ */
+function exportToCSV(data, filename = 'export.csv') {
+    if (!data || data.length === 0) {
+        showAlert('Tidak ada data untuk diekspor', 'warning');
+        return;
+    }
+    
+    const headers = Object.keys(data[0]);
+    const csvContent = [
+        headers.join(','),
+        ...data.map(row => headers.map(header => {
+            const value = row[header] || '';
+            return `"${value.toString().replace(/"/g, '""')}"`;
+        }).join(','))
+    ].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    
+    if (link.download !== undefined) {
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', filename);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+}
+
+/**
+ * Initialize common page elements
+ */
+function initializePage() {
+    // Check authentication
+    if (!requireAuth()) return;
+    
+    // Set user info in navbar
+    const user = getCurrentUser();
+    const userNameElement = document.getElementById('userName');
+    const userRoleElement = document.getElementById('userRole');
+    
+    if (userNameElement) userNameElement.textContent = user.name || user.email;
+    if (userRoleElement) userRoleElement.textContent = user.role || 'User';
+    
+    // Add logout handler
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', logout);
+    }
+    
+    // Initialize tooltips
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+}
+
+/**
+ * Debounce function for search inputs
+ */
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+/**
+ * Initialize page when DOM is loaded
+ */
+document.addEventListener('DOMContentLoaded', function() {
+    // Don't initialize on login page
+    if (!window.location.pathname.includes('login.html')) {
+        initializePage();
+    }
 });
+
+// Global error handler
+window.addEventListener('error', function(e) {
+    console.error('Global error:', e.error);
+    if (CONFIG.DEBUG) {
+        showAlert(`Error: ${e.error.message}`, 'danger');
+    }
+});
+
+// Handle unhandled promise rejections
+window.addEventListener('unhandledrejection', function(e) {
+    console.error('Unhandled promise rejection:', e.reason);
+    if (CONFIG.DEBUG) {
+        showAlert(`Promise rejection: ${e.reason}`, 'danger');
+    }
+});
+
+// Export functions for global use
+window.callAPI = callAPI;
+window.callAPIXHR = callAPIXHR;
+window.showAlert = showAlert;
+window.showLoading = showLoading;
+window.formatDateID = formatDateID;
+window.formatNumber = formatNumber;
+window.safeNumber = safeNumber;
+window.getCurrentUser = getCurrentUser;
+window.setCurrentUser = setCurrentUser;
+window.hasPermission = hasPermission;
+window.logout = logout;
+window.exportToCSV = exportToCSV;

@@ -1,18 +1,12 @@
-<<<<<<< HEAD
-// Advanced Dashboard Harian functionality - Adopsi dari plantation-dashboard
-=======
-// Dashboard Harian functionality
->>>>>>> 5781cb1529a94802cc9a79f6b48d25d517be3804
+// Advanced Dashboard Harian functionality - Enhanced v3.0
 class DailyDashboard {
     constructor() {
         this.productionData = [];
         this.filteredData = [];
-<<<<<<< HEAD
         this.masterData = {};
         this.kebunDivisiMap = {};
         this.charts = {};
         this.dataTable = null;
-        this.apiUrl = 'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec';
         this.initializeDashboard();
     }
 
@@ -25,19 +19,21 @@ class DailyDashboard {
 
     async loadInitialData() {
         try {
-            const response = await this.callAPI('getInitialData', {});
+            const response = await callAPI('getInitialData', {});
             if (response.success) {
                 this.kebunDivisiMap = response.data.kebunDivisiMap;
                 this.populateKebunDropdown();
             }
         } catch (error) {
             console.error('Error loading initial data:', error);
-            this.showAlert('Gagal memuat data awal', 'warning');
+            showAlert('Gagal memuat data awal', 'warning');
         }
     }
 
     populateKebunDropdown() {
         const kebunSelect = document.getElementById('kebunFilter');
+        if (!kebunSelect) return;
+        
         kebunSelect.innerHTML = '<option value="">Semua Kebun</option>';
         
         Object.keys(this.kebunDivisiMap).forEach(kebun => {
@@ -52,6 +48,293 @@ class DailyDashboard {
             this.updateDivisiDropdown(e.target.value);
         });
     }
+
+    updateDivisiDropdown(selectedKebun) {
+        const divisiSelect = document.getElementById('divisiFilter');
+        if (!divisiSelect) return;
+        
+        divisiSelect.innerHTML = '<option value="">Semua Divisi</option>';
+        
+        if (selectedKebun && this.kebunDivisiMap[selectedKebun]) {
+            this.kebunDivisiMap[selectedKebun].forEach(divisi => {
+                const option = document.createElement('option');
+                option.value = divisi;
+                option.textContent = divisi;
+                divisiSelect.appendChild(option);
+            });
+        }
+    }
+
+    setDefaultDates() {
+        const today = new Date();
+        const startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+        
+        const startDateInput = document.getElementById('startDate');
+        const endDateInput = document.getElementById('endDate');
+        
+        if (startDateInput) startDateInput.value = startDate.toISOString().split('T')[0];
+        if (endDateInput) endDateInput.value = today.toISOString().split('T')[0];
+    }
+
+    initializeEventListeners() {
+        // Filter button
+        const filterBtn = document.getElementById('filterBtn');
+        if (filterBtn) {
+            filterBtn.addEventListener('click', () => this.applyFilters());
+        }
+
+        // Export button
+        const exportBtn = document.getElementById('exportBtn');
+        if (exportBtn) {
+            exportBtn.addEventListener('click', () => this.exportData());
+        }
+
+        // Refresh button
+        const refreshBtn = document.getElementById('refreshBtn');
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', () => this.loadDashboardData());
+        }
+    }
+
+    async loadDashboardData() {
+        try {
+            showLoading(true);
+            
+            const filters = this.getFilters();
+            const response = await callAPI('getDailyDashboardData', { filters });
+            
+            if (response.success) {
+                this.productionData = response.data.tableData || [];
+                this.filteredData = this.productionData;
+                
+                this.updateKPICards(response.data.kpis || {});
+                this.updateCharts(response.data.chartData || {});
+                this.updateDataTable();
+                
+                showAlert('Data berhasil dimuat', 'success', 2000);
+            } else {
+                throw new Error(response.error || 'Gagal memuat data');
+            }
+        } catch (error) {
+            console.error('Error loading dashboard data:', error);
+            showAlert('Gagal memuat data dashboard: ' + error.message, 'danger');
+        } finally {
+            showLoading(false);
+        }
+    }
+
+    getFilters() {
+        return {
+            startDate: document.getElementById('startDate')?.value || '',
+            endDate: document.getElementById('endDate')?.value || '',
+            kebun: document.getElementById('kebunFilter')?.value || '',
+            divisi: document.getElementById('divisiFilter')?.value || ''
+        };
+    }
+
+    // MISSING FUNCTION - Added applyFilters
+    async applyFilters() {
+        await this.loadDashboardData();
+    }
+
+    updateKPICards(kpis) {
+        // Update ACV Produksi
+        const acvElement = document.getElementById('acvProduksi');
+        if (acvElement) {
+            acvElement.textContent = formatNumber(kpis.acvProduksi || 0, 2) + '%';
+        }
+
+        // Update Output per Ha
+        const outputHaElement = document.getElementById('outputPerHa');
+        if (outputHaElement) {
+            outputHaElement.textContent = formatNumber(kpis.outputPerHa || 0, 2);
+        }
+
+        // Update Output per HK
+        const outputHkElement = document.getElementById('outputPerHK');
+        if (outputHkElement) {
+            outputHkElement.textContent = formatNumber(kpis.outputPerHK || 0, 2);
+        }
+
+        // Update Refraksi
+        const refraksiElement = document.getElementById('refraksiHarian');
+        if (refraksiElement) {
+            refraksiElement.textContent = formatNumber(kpis.refraksiHarian || 0, 2) + '%';
+        }
+
+        // Update BJR
+        const bjrElement = document.getElementById('bjrHarian');
+        if (bjrElement) {
+            bjrElement.textContent = formatNumber(kpis.bjrHarian || 0, 2);
+        }
+
+        // Update Restan
+        const restanElement = document.getElementById('restanHarian');
+        if (restanElement) {
+            restanElement.textContent = formatNumber(kpis.restanHarian || 0, 0);
+        }
+    }
+
+    updateCharts(chartData) {
+        this.createTrendChart(chartData.trendData || []);
+        this.createKebunComparisonChart(chartData.kebunComparison || {});
+    }
+
+    createTrendChart(trendData) {
+        const ctx = document.getElementById('trendChart');
+        if (!ctx) return;
+
+        // Destroy existing chart
+        if (this.charts.trendChart) {
+            this.charts.trendChart.destroy();
+        }
+
+        this.charts.trendChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: trendData.map(item => formatDateID(item.date)),
+                datasets: [{
+                    label: 'Tonase Panen (Kg)',
+                    data: trendData.map(item => item.tonase),
+                    borderColor: '#007bff',
+                    backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Trend Produksi Harian'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Tonase (Kg)'
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    createKebunComparisonChart(kebunData) {
+        const ctx = document.getElementById('kebunChart');
+        if (!ctx) return;
+
+        // Destroy existing chart
+        if (this.charts.kebunChart) {
+            this.charts.kebunChart.destroy();
+        }
+
+        const labels = Object.keys(kebunData);
+        const data = Object.values(kebunData);
+
+        this.charts.kebunChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Total Produksi (Kg)',
+                    data: data,
+                    backgroundColor: [
+                        '#28a745', '#007bff', '#ffc107', 
+                        '#dc3545', '#17a2b8', '#6f42c1'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Perbandingan Produksi per Kebun'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Tonase (Kg)'
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    updateDataTable() {
+        const tableBody = document.getElementById('dataTableBody');
+        if (!tableBody) return;
+
+        tableBody.innerHTML = '';
+
+        if (this.filteredData.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="10" class="text-center">Tidak ada data</td></tr>';
+            return;
+        }
+
+        this.filteredData.forEach((row, index) => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${index + 1}</td>
+                <td>${formatDateID(row.Tanggal)}</td>
+                <td>${row.Kebun || '-'}</td>
+                <td>${row.Divisi || '-'}</td>
+                <td>${formatNumber(row['Luas Panen (HA)'] || 0, 2)}</td>
+                <td>${formatNumber(row['JJG Panen (Jjg)'] || 0, 0)}</td>
+                <td>${formatNumber(row['Tonase Panen (Kg)'] || 0, 1)}</td>
+                <td>${formatNumber(row['BJR Hari ini'] || 0, 2)}</td>
+                <td>${formatNumber(row['Output (Kg/HK)'] || 0, 2)}</td>
+                <td>${row['Input By'] || '-'}</td>
+            `;
+            tableBody.appendChild(tr);
+        });
+
+        // Update record count
+        const recordCount = document.getElementById('recordCount');
+        if (recordCount) {
+            recordCount.textContent = `Total: ${this.filteredData.length} record`;
+        }
+    }
+
+    exportData() {
+        if (this.filteredData.length === 0) {
+            showAlert('Tidak ada data untuk diekspor', 'warning');
+            return;
+        }
+
+        const filename = `data_harian_${new Date().toISOString().split('T')[0]}.csv`;
+        exportToCSV(this.filteredData, filename);
+        showAlert('Data berhasil diekspor', 'success');
+    }
+}
+
+// Initialize dashboard when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    if (requireAuth()) {
+        new DailyDashboard();
+    }
+});
+
+// Global function for button onclick handlers
+function applyFilters() {
+    if (window.dailyDashboard) {
+        window.dailyDashboard.applyFilters();
+    }
+}
+
+// Store dashboard instance globally
+window.addEventListener('load', function() {
+    if (window.DailyDashboard) {
+        window.dailyDashboard = new DailyDashboard();
+    }
+});
 
     updateDivisiDropdown(selectedKebun) {
         const divisiSelect = document.getElementById('divisiFilter');
@@ -86,17 +369,6 @@ class DailyDashboard {
         }
 
         return await response.json();
-=======
-        this.charts = {};
-        this.dataTable = null;
-        this.initializeDashboard();
-    }
-
-    initializeDashboard() {
-        this.setDefaultDates();
-        this.initializeEventListeners();
-        this.loadDashboardData();
->>>>>>> 5781cb1529a94802cc9a79f6b48d25d517be3804
     }
 
     setDefaultDates() {
@@ -121,7 +393,6 @@ class DailyDashboard {
 
     async loadDashboardData() {
         try {
-<<<<<<< HEAD
             this.showLoading(true);
             
             const filters = this.getFilters();
@@ -147,29 +418,11 @@ class DailyDashboard {
             this.showAlert('Gagal memuat data dashboard: ' + error.message, 'danger');
             // Load demo data as fallback
             await this.loadDemoData();
-=======
-            // Show loading state
-            this.showLoading(true);
-            
-            // Simulate API call to Google Sheets
-            this.productionData = await this.fetchProductionData();
-            this.filteredData = [...this.productionData];
-            
-            // Update dashboard
-            this.updateSummaryCards();
-            this.renderCharts();
-            this.renderDataTable();
-            
-        } catch (error) {
-            console.error('Error loading dashboard data:', error);
-            this.showAlert('Gagal memuat data dashboard', 'danger');
->>>>>>> 5781cb1529a94802cc9a79f6b48d25d517be3804
         } finally {
             this.showLoading(false);
         }
     }
 
-<<<<<<< HEAD
     getFilters() {
         return {
             startDate: document.getElementById('startDate').value,
@@ -234,19 +487,13 @@ class DailyDashboard {
         `;
     }
 
-=======
->>>>>>> 5781cb1529a94802cc9a79f6b48d25d517be3804
     async fetchProductionData() {
         // Simulate API delay
         await new Promise(resolve => setTimeout(resolve, 1000));
         
         // Generate demo data
         const kebunList = ['PT. PAL', 'PT. LSP RS', 'PT. LSP PR', 'CANDIMAS', 'PT. HSBS'];
-<<<<<<< HEAD
         const divisiList = ['Divisi 1', 'Divisi 2', 'Divisi 3', 'Divisi 4'];
-=======
-        const divisiList = ['Divisi 1', 'Divisi 2', 'Divisi 3', 'Divisi 4', 'INTI', 'PLASMA'];
->>>>>>> 5781cb1529a94802cc9a79f6b48d25d517be3804
         const data = [];
         
         for (let i = 0; i < 30; i++) {
