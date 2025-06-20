@@ -4,10 +4,10 @@ const CONFIG = {
     GOOGLE_SHEETS_ID: '1UMA4dHaqG6dmJ0kWTq7NPz6xmqnTPSqJpMu4ws7TFjs',
     
     // Google Apps Script Web App URL - UPDATED with correct URL
-    API_BASE_URL: 'https://script.google.com/macros/s/AKfycbyvJjfEG_99m2fwv4NeKgZM-2O0zSqmCdqSJJMuUVdDJXE0UHa97UUAzB2NoZuaD81s1w/exec',
+    API_BASE_URL: 'https://script.google.com/macros/s/AKfycbxP0RShKXaTlv8fHUlotzJlHdV53k3x-zIsTMNNNp4M7FaeqgrohFOrzD3fuOHEaM134w/exec',
     
     // Google OAuth Client ID (untuk Google Sign-In)
-    GOOGLE_CLIENT_ID: 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com',
+    GOOGLE_CLIENT_ID: '67c37218d77b709b2ac0d3aa5cdcc89e6e922dd0',
     
     // Sheet Names
     SHEETS: {
