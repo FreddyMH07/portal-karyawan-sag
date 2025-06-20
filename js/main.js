@@ -31,8 +31,9 @@ async function callAPI(action, data = {}) {
         const response = await fetch(CONFIG.API_BASE_URL, {
             method: 'POST',
             mode: 'cors', // Enable CORS
+                    redirect: 'follow',
             headers: {
-                'Content-Type': 'application/json',
+                'Content-Type': 'text/plain;charset=utf-8'
             },
             body: JSON.stringify(payload)
         });
