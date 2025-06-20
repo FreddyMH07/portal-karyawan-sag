@@ -4,7 +4,7 @@ const CONFIG = {
     GOOGLE_SHEETS_ID: '1UMA4dHaqG6dmJ0kWTq7NPz6xmqnTPSqJpMu4ws7TFjs',
     
     // Google Apps Script Web App URL - UPDATED with correct URL
-    API_BASE_URL: 'https://script.google.com/macros/s/AKfycbz05uXzZHDaQZH_lF0NiZRrCMHDD95L-sJJfvqwIx20flGlkcc3LaoZ7USSkE6M97hHVg/exec',
+    API_BASE_URL: 'https://script.google.com/macros/s/AKfycbwBskOo2xT69KZ0kBQlCodPd4EL4daUqNUZyXfOna6S8hsBlFMcbPUOjfDbwKZt0gupHQ/exec',
     
     // Google OAuth Client ID (untuk Google Sign-In)
     GOOGLE_CLIENT_ID: '67c37218d77b709b2ac0d3aa5cdcc89e6e922dd0',
