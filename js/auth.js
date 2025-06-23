@@ -42,14 +42,21 @@ function getValidSession() {
  * Menangani klik pada kartu portal di halaman utama.
  * (Tidak ada perubahan di sini, tetap sama)
  */
-function accessPortal(portalId) {
-    console.log(`Pengguna mencoba mengakses portal: ${portalId}`);
+// auth.js
+function accessPortal(portalId) { // portalId bisa 'produksi', 'hr', 'umum'
     
-    if (typeof hasPermission === 'function' && hasPermission(`access_${portalId}`)) {
+    // Anda perlu membuat pemetaan manual di sini
+    const permissionMap = {
+        'produksi': 'DATA_HARIAN',
+        'hr': 'ABSENSI', // atau 'BOOKING'? Anda harus memilih satu.
+        'umum': 'ASSET' // Ini hanya asumsi
+    };
+    
+    const requiredPermission = permissionMap[portalId];
+
+    if (hasPermission(requiredPermission)) { // Memeriksa izin seperti 'DATA_HARIAN'
         window.location.href = `${portalId}.html`;
-    } else if (typeof showAlert === 'function') {
-        showAlert('Anda tidak memiliki izin untuk mengakses portal ini.', 'danger');
     } else {
-        alert('Anda tidak memiliki izin untuk mengakses portal ini.');
+        showAlert('Anda tidak memiliki izin untuk mengakses portal ini.', 'danger');
     }
 }
