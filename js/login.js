@@ -97,29 +97,33 @@ class LoginManager {
             // Fallback to demo users if API fails
             console.log('API failed, using demo users...');
             
-            const demoUsers = [
-                {
-                    email: 'admin@sag.com',
-                    password: 'admin123',
-                    name: 'Administrator',
-                    role: 'admin',
-                    permissions: ['DATA_HARIAN', 'BOOKING', 'ABSENSI', 'KPI', 'ASSET', 'MASTER_DATA', 'USERS']
-                },
-                {
-                    email: 'manager@sag.com',
-                    password: 'manager123',
-                    name: 'Manager',
-                    role: 'manager',
-                    permissions: ['DATA_HARIAN', 'BOOKING', 'ABSENSI', 'KPI', 'ASSET']
-                },
-                {
-                    email: 'staff@sag.com',
-                    password: 'staff123',
-                    name: 'Staff',
-                    role: 'staff',
-                    permissions: ['DATA_HARIAN', 'BOOKING']
-                }
-            ];
+// GANTI SELURUH BLOK INI DI login.js
+const demoUsers = [
+    {
+        email: 'admin@sag.com',
+        password: 'admin123',
+        name: 'Administrator',
+        role: 'admin',
+        // Izin yang sudah diperbaiki
+        permissions: ['access_produksi', 'access_hr', 'access_umum'] 
+    },
+    {
+        email: 'manager@sag.com',
+        password: 'manager123',
+        name: 'Manager',
+        role: 'manager',
+        // Izin yang sudah diperbaiki
+        permissions: ['access_produksi', 'access_hr'] 
+    },
+    {
+        email: 'staff@sag.com',
+        password: 'staff123',
+        name: 'Staff',
+        role: 'staff',
+        // Izin yang sudah diperbaiki
+        permissions: ['access_produksi'] 
+    }
+];
 
             const user = demoUsers.find(u => u.email === email && u.password === password);
             
