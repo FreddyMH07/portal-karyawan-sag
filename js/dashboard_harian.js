@@ -295,7 +295,7 @@ addNewRecord() {
     document.getElementById('modalTanggal').value = new Date().toISOString().split('T')[0];
     const modal = new bootstrap.Modal(document.getElementById('dataModal'));
     modal.show();
-},
+}
 
 
 
@@ -310,7 +310,7 @@ editRecord(index) {
         this.updateModalDivisiDropdown(e.target.value);
     });
     // ...show modal...
-},
+}
 
     
     deleteRecord(index) {
