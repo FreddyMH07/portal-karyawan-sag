@@ -1,4 +1,5 @@
-// Advanced Dashboard Harian functionality - Enhanced v3.0
+// Advanced Dashboard Harian functionality - Enhanced v3.1
+// Versi revisi tanpa id dan CRUD berbasis index array
 
 class DailyDashboard {
     constructor() {
@@ -36,26 +37,25 @@ class DailyDashboard {
         document.getElementById('resetBtn')?.addEventListener('click', () => this.resetFilters());
         document.getElementById('refreshBtn')?.addEventListener('click', () => this.loadDashboardData());
         document.getElementById('kebunFilter')?.addEventListener('change', e => this.updateDivisiDropdown(e.target.value));
-        // Modal & CRUD events (pastikan handler global juga ada)
+
+        // Modal & CRUD events (handler global)
         window.addNewRecord = () => this.addNewRecord();
-        window.editRecord = (id) => this.editRecord(id);
-        window.deleteRecord = (id) => this.deleteRecord(id);
+        window.editRecord = (index) => this.editRecord(index);
+        window.deleteRecord = (index) => this.deleteRecord(index);
         window.saveData = () => this.saveData();
     }
 
-async loadInitialData() {
-    try {
-        const response = await callAPI('getInitialData', {});
-        console.log('RESPONSE getInitialData:', response);
-        if (response.success) {
-            this.kebunDivisiMap = response.data.kebunDivisiMap;
-            console.log('KEBUN MAP:', this.kebunDivisiMap);
-            this.populateKebunDropdown();
+    async loadInitialData() {
+        try {
+            const response = await callAPI('getInitialData', {});
+            if (response.success) {
+                this.kebunDivisiMap = response.data.kebunDivisiMap;
+                this.populateKebunDropdown();
+            }
+        } catch (error) {
+            showAlert('Gagal memuat data awal', 'warning');
         }
-    } catch (error) {
-        showAlert('Gagal memuat data awal', 'warning');
     }
-}
 
     populateKebunDropdown() {
         const kebunSelect = document.getElementById('kebunFilter');
@@ -229,26 +229,29 @@ async loadInitialData() {
         if (!tableBody) return;
         tableBody.innerHTML = '';
         if (this.filteredData.length === 0) {
-            tableBody.innerHTML = '<tr><td colspan="10" class="text-center">Tidak ada data</td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="12" class="text-center">Tidak ada data</td></tr>';
             return;
         }
         this.filteredData.forEach((row, index) => {
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td>${index + 1}</td>
-                <td>${formatDateID(row.Tanggal)}</td>
-                <td>${row.Kebun || '-'}</td>
-                <td>${row.Divisi || '-'}</td>
+                <td>${formatDateID(row['Tanggal'])}</td>
+                <td>${row['Kebun'] || '-'}</td>
+                <td>${row['Divisi'] || '-'}</td>
                 <td>${formatNumber(row['Luas Panen (HA)'] || 0, 2)}</td>
                 <td>${formatNumber(row['JJG Panen (Jjg)'] || 0, 0)}</td>
                 <td>${formatNumber(row['Tonase Panen (Kg)'] || 0, 1)}</td>
                 <td>${formatNumber(row['BJR Hari ini'] || 0, 2)}</td>
                 <td>${formatNumber(row['Output (Kg/HK)'] || 0, 2)}</td>
                 <td>${row['Input By'] || '-'}</td>
+                <td>
+                  <button class="btn btn-sm btn-warning" onclick="editRecord(${index})">Edit</button>
+                  <button class="btn btn-sm btn-danger" onclick="deleteRecord(${index})">Delete</button>
+                </td>
             `;
             tableBody.appendChild(tr);
         });
-        // Update record count
         const recordCount = document.getElementById('recordCount');
         if (recordCount) {
             recordCount.textContent = `Total: ${this.filteredData.length} record`;
@@ -263,135 +266,30 @@ async loadInitialData() {
         document.getElementById('modalTanggal').value = new Date().toISOString().split('T')[0];
         const modal = new bootstrap.Modal(document.getElementById('dataModal'));
         modal.show();
+
+        // Set mode tambah
+        window.currentEditIndex = null;
     }
 
-    editRecord(id) {
-        const record = this.productionData.find(item => item.id === id);
+    editRecord(index) {
+        const record = this.filteredData[index];
         if (!record) return;
         document.getElementById('modalTitle').textContent = 'Edit Data Produksi';
-        document.getElementById('modalTanggal').value = record.tanggal;
-        document.getElementById('modalKebun').value = record.kebun;
-        document.getElementById('modalDivisi').value = record.divisi;
-        document.getElementById('modalLuasPanen').value = record.luasPanen;
-        document.getElementById('modalJJGPanen').value = record.jjgPanen;
-        document.getElementById('modalTonase').value = record.tonase;
+        document.getElementById('modalTanggal').value = formatDateInput(record['Tanggal']);
+        document.getElementById('modalKebun').value = record['Kebun'];
+        document.getElementById('modalDivisi').value = record['Divisi'];
+        document.getElementById('modalLuasPanen').value = record['Luas Panen (HA)'];
+        document.getElementById('modalJJGPanen').value = record['JJG Panen (Jjg)'];
+        document.getElementById('modalTonase').value = record['Tonase Panen (Kg)'];
+
+        // Simpan index record yang diedit
+        window.currentEditIndex = index;
+
         const modal = new bootstrap.Modal(document.getElementById('dataModal'));
         modal.show();
     }
 
-    deleteRecord(id) {
+    deleteRecord(index) {
         if (confirm('Apakah Anda yakin ingin menghapus data ini?')) {
-            this.productionData = this.productionData.filter(item => item.id !== id);
-            this.applyFilters();
-            showAlert('Data berhasil dihapus', 'success');
-        }
-    }
-
-    saveData() {
-        const form = document.getElementById('dataForm');
-        if (!form.checkValidity()) {
-            form.reportValidity();
-            return;
-        }
-        const formData = {
-            tanggal: document.getElementById('modalTanggal').value,
-            kebun: document.getElementById('modalKebun').value,
-            divisi: document.getElementById('modalDivisi').value,
-            luasPanen: parseFloat(document.getElementById('modalLuasPanen').value),
-            jjgPanen: parseInt(document.getElementById('modalJJGPanen').value),
-            tonase: parseFloat(document.getElementById('modalTonase').value)
-        };
-        formData.bjr = (formData.tonase * 1000 / formData.jjgPanen).toFixed(2);
-        formData.akp = (formData.jjgPanen / (formData.luasPanen * 130)).toFixed(2);
-        formData.refraksi = (Math.random() * 3 + 1).toFixed(2); // Demo refraksi
-        formData.id = Date.now();
-        this.productionData.unshift(formData);
-        this.applyFilters();
-        const modal = bootstrap.Modal.getInstance(document.getElementById('dataModal'));
-        modal.hide();
-        showAlert('Data berhasil disimpan', 'success');
-    }
-
-    // ----- Master Data Card -----
-    async updateMasterDataCard(filters) {
-        try {
-            const response = await callAPI('getMasterData', { filters });
-            if (response.success) {
-                this.renderMasterDataCard(response.data);
-            }
-        } catch (error) {
-            console.error('Error loading master data:', error);
-        }
-    }
-
-    renderMasterDataCard(masterData) {
-        let masterCard = document.getElementById('masterDataCard');
-        if (!masterCard) {
-            masterCard = document.createElement('div');
-            masterCard.id = 'masterDataCard';
-            masterCard.className = 'chart-card mb-4';
-            const summaryRow = document.querySelector('.row.mb-4');
-            summaryRow?.parentNode.insertBefore(masterCard, summaryRow.nextSibling);
-        }
-        masterCard.innerHTML = `
-            <h5 class="mb-3"><i class="fas fa-database me-2"></i>Master Data Info</h5>
-            <div class="row">
-                <div class="col-md-3">
-                    <div class="text-center">
-                        <h6 class="text-muted">Budget Bulanan</h6>
-                        <h4 class="text-primary">${masterData.budget || 0} Ton</h4>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="text-center">
-                        <h6 class="text-muted">SPH Panen</h6>
-                        <h4 class="text-info">${masterData.sphPanen || 130}</h4>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="text-center">
-                        <h6 class="text-muted">Luas TM</h6>
-                        <h4 class="text-success">${masterData.luasTM || 0} Ha</h4>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="text-center">
-                        <h6 class="text-muted">PKK</h6>
-                        <h4 class="text-warning">${masterData.pkk || 85}%</h4>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-}
-
-// == OUTSIDE THE CLASS! ==
-// Loading spinner
-function showLoading(show = true) {
-    let el = document.getElementById('globalLoadingSpinner');
-    if (!el) {
-        el = document.createElement('div');
-        el.id = 'globalLoadingSpinner';
-        el.innerHTML = `
-            <div class="position-fixed top-50 start-50 translate-middle" style="z-index:9999">
-                <div class="spinner-border text-primary" style="width:4rem;height:4rem;" role="status">
-                  <span class="visually-hidden">Loading...</span>
-                </div>
-            </div>
-        `;
-        document.body.appendChild(el);
-    }
-    el.style.display = show ? 'block' : 'none';
-    if (!show) setTimeout(() => el.remove(), 500);
-}
-
-// == INIT ==
-document.addEventListener('DOMContentLoaded', () => {
-    window.dailyDashboard = new DailyDashboard();
-});
-
-// == HTML onclick handler (supaya ga error di HTML inline)==
-function applyFilters()   { window.dailyDashboard?.applyFilters(); }
-function resetFilters()   { window.dailyDashboard?.resetFilters(); }
-function exportData()     { window.dailyDashboard?.exportData(); }
-function refreshData()    { window.dailyDashboard?.loadDashboardData(); }
+            // Hapus dari productionData
+            const dataIndex = this.productionData.indexOf
