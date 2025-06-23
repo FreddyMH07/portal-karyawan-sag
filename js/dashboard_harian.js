@@ -322,6 +322,24 @@ class DailyDashboard {
         }
     }
 
+    function showLoading(show = true) {
+    let el = document.getElementById('globalLoadingSpinner');
+    if (!el) {
+        el = document.createElement('div');
+        el.id = 'globalLoadingSpinner';
+        el.innerHTML = `
+            <div class="position-fixed top-50 start-50 translate-middle" style="z-index:9999">
+                <div class="spinner-border text-primary" style="width:4rem;height:4rem;" role="status">
+                  <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(el);
+    }
+    el.style.display = show ? 'block' : 'none';
+    if (!show) setTimeout(() => el.remove(), 500); // hilangkan setelah selesai
+}
+
     renderMasterDataCard(masterData) {
         let masterCard = document.getElementById('masterDataCard');
         if (!masterCard) {
