@@ -58,13 +58,16 @@
                 </div>
                 <div class="col-md-3">
                     <label class="form-label">Kebun (PT)</label>
-                    <select class="form-select" id="kebunFilter"></select>
+                    <select class="form-select" id="kebunFilter">
+                        <option value="">Semua Kebun</option>
+                        <!-- Isi via JS -->
+                    </select>
                 </div>
                 <div class="col-md-3">
                     <label class="form-label">Divisi</label>
                     <select class="form-select" id="divisiFilter">
                         <option value="">Semua Divisi</option>
-                        <!-- Divisi diinject via JS -->
+                        <!-- Isi via JS -->
                     </select>
                 </div>
             </div>
@@ -80,45 +83,65 @@
             </div>
         </div>
 
-        <!-- Summary Cards -->
+        <!-- KPI & Summary Cards -->
         <div class="row mb-4">
-            <div class="col-lg-3 col-md-6 mb-3">
+            <div class="col-lg-2 col-md-4 mb-2">
                 <div class="stat-card">
-                    <div class="stat-icon bg-success"><i class="fas fa-weight-hanging"></i></div>
+                    <div class="stat-icon bg-success"><i class="fas fa-balance-scale"></i></div>
                     <div class="stat-content">
-                        <h6>Total Produksi</h6>
-                        <h4 id="totalProduksi">-</h4>
-                        <small class="text-muted">Ton</small>
+                        <h6>ACV Produksi</h6>
+                        <h4 id="acvProduksi">-</h4>
+                        <small class="text-muted">%</small>
                     </div>
                 </div>
             </div>
-            <div class="col-lg-3 col-md-6 mb-3">
+            <div class="col-lg-2 col-md-4 mb-2">
                 <div class="stat-card">
-                    <div class="stat-icon bg-info"><i class="fas fa-seedling"></i></div>
+                    <div class="stat-icon bg-info"><i class="fas fa-tree"></i></div>
                     <div class="stat-content">
-                        <h6>Total JJG</h6>
-                        <h4 id="totalJJG">-</h4>
-                        <small class="text-muted">Buah</small>
+                        <h6>Output/Ha</h6>
+                        <h4 id="outputPerHa">-</h4>
+                        <small class="text-muted">Ton/Ha</small>
                     </div>
                 </div>
             </div>
-            <div class="col-lg-3 col-md-6 mb-3">
+            <div class="col-lg-2 col-md-4 mb-2">
                 <div class="stat-card">
-                    <div class="stat-icon bg-warning"><i class="fas fa-chart-bar"></i></div>
+                    <div class="stat-icon bg-warning"><i class="fas fa-users"></i></div>
                     <div class="stat-content">
-                        <h6>Rata-rata BJR</h6>
-                        <h4 id="avgBJR">-</h4>
+                        <h6>Output/HK</h6>
+                        <h4 id="outputPerHK">-</h4>
+                        <small class="text-muted">Ton/HK</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-2 col-md-4 mb-2">
+                <div class="stat-card">
+                    <div class="stat-icon bg-danger"><i class="fas fa-percentage"></i></div>
+                    <div class="stat-content">
+                        <h6>Refraksi</h6>
+                        <h4 id="refraksiHarian">-</h4>
+                        <small class="text-muted">%</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-2 col-md-4 mb-2">
+                <div class="stat-card">
+                    <div class="stat-icon bg-secondary"><i class="fas fa-seedling"></i></div>
+                    <div class="stat-content">
+                        <h6>BJR Harian</h6>
+                        <h4 id="bjrHarian">-</h4>
                         <small class="text-muted">Kg/JJG</small>
                     </div>
                 </div>
             </div>
-            <div class="col-lg-3 col-md-6 mb-3">
+            <div class="col-lg-2 col-md-4 mb-2">
                 <div class="stat-card">
-                    <div class="stat-icon bg-danger"><i class="fas fa-percentage"></i></div>
+                    <div class="stat-icon bg-primary"><i class="fas fa-warehouse"></i></div>
                     <div class="stat-content">
-                        <h6>ACV Production</h6>
-                        <h4 id="acvProduction">-</h4>
-                        <small class="text-muted">%</small>
+                        <h6>Restan</h6>
+                        <h4 id="restanHarian">-</h4>
+                        <small class="text-muted">JJG</small>
                     </div>
                 </div>
             </div>
@@ -159,17 +182,17 @@
                                 <th>Tanggal</th>
                                 <th>Kebun</th>
                                 <th>Divisi</th>
-                                <th>Luas Panen (Ha)</th>
-                                <th>JJG Panen</th>
-                                <th>Tonase (Kg)</th>
-                                <th>BJR (Kg/JJG)</th>
-                                <th>Refraksi (%)</th>
-                                <th>AKP</th>
+                                <th>Luas Panen (HA)</th>
+                                <th>JJG Panen (Jjg)</th>
+                                <th>Tonase Panen (Kg)</th>
+                                <th>BJR Hari ini</th>
+                                <th>Output (Kg/HK)</th>
+                                <th>Input By</th>
                                 <th>Aksi</th>
                             </tr>
                         </thead>
                         <tbody id="dataTableBody">
-                            <!-- Data will be injected via JS -->
+                            <!-- Data akan di-inject via JS -->
                         </tbody>
                     </table>
                     <div id="recordCount" class="mt-2"></div>
@@ -197,38 +220,38 @@
                                 <label class="form-label">Kebun</label>
                                 <select class="form-select" id="modalKebun" required>
                                     <option value="">Pilih Kebun</option>
-                                    <option value="PT. PAL">PT. PAL</option>
-                                    <option value="PT. LSP RS">PT. LSP RS</option>
-                                    <option value="PT. LSP PR">PT. LSP PR</option>
-                                    <option value="CANDIMAS">CANDIMAS</option>
-                                    <option value="PT. HSBS">PT. HSBS</option>
+                                    <!-- Daftar Kebun isi via JS -->
                                 </select>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Divisi</label>
                                 <select class="form-select" id="modalDivisi" required>
                                     <option value="">Pilih Divisi</option>
-                                    <option value="Divisi 1">Divisi 1</option>
-                                    <option value="Divisi 2">Divisi 2</option>
-                                    <option value="Divisi 3">Divisi 3</option>
-                                    <option value="Divisi 4">Divisi 4</option>
-                                    <option value="Inti">INTI</option>
-                                    <option value="Plasma">PLASMA</option>
-                                    
+                                    <!-- Daftar Divisi isi via JS -->
                                 </select>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">Luas Panen (Ha)</label>
+                                <label class="form-label">Luas Panen (HA)</label>
                                 <input type="number" class="form-control" id="modalLuasPanen" step="0.01" required>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">JJG Panen</label>
+                                <label class="form-label">JJG Panen (Jjg)</label>
                                 <input type="number" class="form-control" id="modalJJGPanen" required>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">Tonase (Kg)</label>
+                                <label class="form-label">Tonase Panen (Kg)</label>
                                 <input type="number" class="form-control" id="modalTonase" step="0.1" required>
                             </div>
+                            <!-- Optional auto field, calculated by JS:
+                            <div class="col-md-6">
+                                <label class="form-label">BJR Hari ini</label>
+                                <input type="number" class="form-control" id="modalBJR" step="0.01" disabled>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Output (Kg/HK)</label>
+                                <input type="number" class="form-control" id="modalOutputHK" step="0.01" disabled>
+                            </div>
+                            -->
                         </div>
                     </form>
                 </div>
@@ -239,6 +262,9 @@
             </div>
         </div>
     </div>
+
+    <!-- Spinner Global -->
+    <div id="globalLoadingSpinner" style="display:none;"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
