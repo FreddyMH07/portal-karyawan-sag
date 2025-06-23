@@ -132,6 +132,37 @@ class DailyDashboard {
         showAlert('Data berhasil diekspor', 'success');
     }
 
+    // --- Helper: Populate dropdown di MODAL dari master ---
+populateModalKebunDivisi() {
+    // Kebun
+    const kebunSelect = document.getElementById('modalKebun');
+    kebunSelect.innerHTML = '<option value="">Pilih Kebun</option>';
+    Object.keys(this.kebunDivisiMap).forEach(kebun => {
+        const option = document.createElement('option');
+        option.value = kebun;
+        option.textContent = kebun;
+        kebunSelect.appendChild(option);
+    });
+    // Divisi: kosong dulu, baru isi setelah pilih kebun
+    const divisiSelect = document.getElementById('modalDivisi');
+    divisiSelect.innerHTML = '<option value="">Pilih Divisi</option>';
+},
+
+// --- Saat kebun modal berubah, update divisi modal ---
+updateModalDivisiDropdown(selectedKebun) {
+    const divisiSelect = document.getElementById('modalDivisi');
+    divisiSelect.innerHTML = '<option value="">Pilih Divisi</option>';
+    if (selectedKebun && this.kebunDivisiMap[selectedKebun]) {
+        this.kebunDivisiMap[selectedKebun].forEach(divisi => {
+            const option = document.createElement('option');
+            option.value = divisi;
+            option.textContent = divisi;
+            divisiSelect.appendChild(option);
+        });
+    }
+},
+
+
     updateKPICards(kpis) {
         const acvElement = document.getElementById('acvProduksi');
         if (acvElement) acvElement.textContent = formatNumber(kpis.acvProduksi || 0, 2) + '%';
@@ -254,30 +285,34 @@ class DailyDashboard {
 
     // ---- CRUD & Helper Functions ----
 
-    addNewRecord() {
-        this.editingIndex = null;
-        document.getElementById('modalTitle').textContent = 'Tambah Data Produksi';
-        document.getElementById('dataForm').reset();
-        document.getElementById('modalTanggal').value = new Date().toISOString().split('T')[0];
-        const modal = new bootstrap.Modal(document.getElementById('dataModal'));
-        modal.show();
-    }
+addNewRecord() {
+    document.getElementById('modalTitle').textContent = 'Tambah Data Produksi';
+    document.getElementById('dataForm').reset();
+    this.populateModalKebunDivisi();
+    document.getElementById('modalKebun').addEventListener('change', e => {
+        this.updateModalDivisiDropdown(e.target.value);
+    });
+    document.getElementById('modalTanggal').value = new Date().toISOString().split('T')[0];
+    const modal = new bootstrap.Modal(document.getElementById('dataModal'));
+    modal.show();
+},
 
-    editRecord(index) {
-        this.editingIndex = index;
-        const record = this.filteredData[index];
-        if (!record) return;
-        document.getElementById('modalTitle').textContent = 'Edit Data Produksi';
-        document.getElementById('modalTanggal').value = toInputDate(record['Tanggal']);
-        document.getElementById('modalKebun').value = record['Kebun'];
-        document.getElementById('modalDivisi').value = record['Divisi'];
-        document.getElementById('modalLuasPanen').value = record['Luas Panen (HA)'];
-        document.getElementById('modalJJGPanen').value = record['JJG Panen (Jjg)'];
-        document.getElementById('modalTonase').value = record['Tonase Panen (Kg)'];
-        const modal = new bootstrap.Modal(document.getElementById('dataModal'));
-        modal.show();
-    }
 
+
+editRecord(index) {
+    // ...find record by index/ID...
+    this.populateModalKebunDivisi();
+    document.getElementById('modalKebun').value = record.Kebun;
+    this.updateModalDivisiDropdown(record.Kebun);
+    document.getElementById('modalDivisi').value = record.Divisi;
+    // ...set value lainnya...
+    document.getElementById('modalKebun').addEventListener('change', e => {
+        this.updateModalDivisiDropdown(e.target.value);
+    });
+    // ...show modal...
+},
+
+    
     deleteRecord(index) {
         if (confirm('Apakah Anda yakin ingin menghapus data ini?')) {
             // Jika kamu ingin ke backend, panggil callAPI('deleteDailyData', { rowId: index + 2 }) (baris 2 = row pertama data)
