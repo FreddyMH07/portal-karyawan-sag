@@ -146,7 +146,7 @@ populateModalKebunDivisi() {
     // Divisi: kosong dulu, baru isi setelah pilih kebun
     const divisiSelect = document.getElementById('modalDivisi');
     divisiSelect.innerHTML = '<option value="">Pilih Divisi</option>';
-
+}
 
 // --- Saat kebun modal berubah, update divisi modal ---
 updateModalDivisiDropdown(selectedKebun) {
@@ -160,7 +160,7 @@ updateModalDivisiDropdown(selectedKebun) {
             divisiSelect.appendChild(option);
         });
     }
-},
+}
 
 
     updateKPICards(kpis) {
