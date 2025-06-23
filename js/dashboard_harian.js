@@ -1,17 +1,14 @@
-// Advanced Dashboard Harian functionality - Enhanced v3.1
-// Versi revisi tanpa id dan CRUD berbasis index array
+// Advanced Dashboard Harian functionality - Enhanced v3.1 (NO ID EDITION)
 
 class DailyDashboard {
     constructor() {
         this.productionData = [];
         this.filteredData = [];
-        this.masterData = {};
         this.kebunDivisiMap = {};
         this.charts = {};
-        this.dataTable = null;
+        this.editingIndex = null; // track row being edited
 
-        if (typeof requireAuth !== 'function' || !requireAuth()) return; // stop if not login
-
+        if (typeof requireAuth !== 'function' || !requireAuth()) return;
         this.initializeDashboard();
     }
 
@@ -25,10 +22,8 @@ class DailyDashboard {
     setDefaultDates() {
         const today = new Date();
         const startDate = new Date(today.getFullYear(), today.getMonth(), 1);
-        const startDateInput = document.getElementById('startDate');
-        const endDateInput = document.getElementById('endDate');
-        if (startDateInput) startDateInput.value = startDate.toISOString().split('T')[0];
-        if (endDateInput) endDateInput.value = today.toISOString().split('T')[0];
+        document.getElementById('startDate').value = startDate.toISOString().split('T')[0];
+        document.getElementById('endDate').value = today.toISOString().split('T')[0];
     }
 
     initializeEventListeners() {
@@ -37,8 +32,6 @@ class DailyDashboard {
         document.getElementById('resetBtn')?.addEventListener('click', () => this.resetFilters());
         document.getElementById('refreshBtn')?.addEventListener('click', () => this.loadDashboardData());
         document.getElementById('kebunFilter')?.addEventListener('change', e => this.updateDivisiDropdown(e.target.value));
-
-        // Modal & CRUD events (handler global)
         window.addNewRecord = () => this.addNewRecord();
         window.editRecord = (index) => this.editRecord(index);
         window.deleteRecord = (index) => this.deleteRecord(index);
@@ -252,6 +245,7 @@ class DailyDashboard {
             `;
             tableBody.appendChild(tr);
         });
+        // Update record count
         const recordCount = document.getElementById('recordCount');
         if (recordCount) {
             recordCount.textContent = `Total: ${this.filteredData.length} record`;
@@ -261,35 +255,165 @@ class DailyDashboard {
     // ---- CRUD & Helper Functions ----
 
     addNewRecord() {
+        this.editingIndex = null;
         document.getElementById('modalTitle').textContent = 'Tambah Data Produksi';
         document.getElementById('dataForm').reset();
         document.getElementById('modalTanggal').value = new Date().toISOString().split('T')[0];
         const modal = new bootstrap.Modal(document.getElementById('dataModal'));
         modal.show();
-
-        // Set mode tambah
-        window.currentEditIndex = null;
     }
 
     editRecord(index) {
+        this.editingIndex = index;
         const record = this.filteredData[index];
         if (!record) return;
         document.getElementById('modalTitle').textContent = 'Edit Data Produksi';
-        document.getElementById('modalTanggal').value = formatDateInput(record['Tanggal']);
+        document.getElementById('modalTanggal').value = toInputDate(record['Tanggal']);
         document.getElementById('modalKebun').value = record['Kebun'];
         document.getElementById('modalDivisi').value = record['Divisi'];
         document.getElementById('modalLuasPanen').value = record['Luas Panen (HA)'];
         document.getElementById('modalJJGPanen').value = record['JJG Panen (Jjg)'];
         document.getElementById('modalTonase').value = record['Tonase Panen (Kg)'];
-
-        // Simpan index record yang diedit
-        window.currentEditIndex = index;
-
         const modal = new bootstrap.Modal(document.getElementById('dataModal'));
         modal.show();
     }
 
     deleteRecord(index) {
         if (confirm('Apakah Anda yakin ingin menghapus data ini?')) {
-            // Hapus dari productionData
-            const dataIndex = this.productionData.indexOf
+            // Jika kamu ingin ke backend, panggil callAPI('deleteDailyData', { rowId: index + 2 }) (baris 2 = row pertama data)
+            this.filteredData.splice(index, 1);
+            this.updateDataTable();
+            showAlert('Data berhasil dihapus', 'success');
+        }
+    }
+
+    saveData() {
+        const form = document.getElementById('dataForm');
+        if (!form.checkValidity()) {
+            form.reportValidity();
+            return;
+        }
+        // Pastikan mapping sesuai sheet
+        const formData = {
+            'Tanggal': document.getElementById('modalTanggal').value,
+            'Kebun': document.getElementById('modalKebun').value,
+            'Divisi': document.getElementById('modalDivisi').value,
+            'Luas Panen (HA)': parseFloat(document.getElementById('modalLuasPanen').value),
+            'JJG Panen (Jjg)': parseInt(document.getElementById('modalJJGPanen').value),
+            'Tonase Panen (Kg)': parseFloat(document.getElementById('modalTonase').value),
+            'BJR Hari ini': parseFloat(document.getElementById('modalBJR')?.value) || 0,
+            'Output (Kg/HK)': parseFloat(document.getElementById('modalOutputHK')?.value) || 0,
+            'Input By': getCurrentUser?.() || 'User'
+        };
+        // Auto-calc fields
+        formData['BJR Hari ini'] = (formData['Tonase Panen (Kg)'] && formData['JJG Panen (Jjg)'])
+            ? (formData['Tonase Panen (Kg)'] * 1000 / formData['JJG Panen (Jjg)']).toFixed(2)
+            : 0;
+        // Save
+        if (this.editingIndex !== null) {
+            // Edit mode
+            Object.assign(this.filteredData[this.editingIndex], formData);
+            showAlert('Data berhasil diperbarui', 'success');
+        } else {
+            // Add new
+            this.filteredData.unshift(formData);
+            showAlert('Data berhasil ditambah', 'success');
+        }
+        this.updateDataTable();
+        const modal = bootstrap.Modal.getInstance(document.getElementById('dataModal'));
+        modal.hide();
+    }
+
+    // ----- Master Data Card -----
+    async updateMasterDataCard(filters) {
+        try {
+            const response = await callAPI('getMasterData', { filters });
+            if (response.success) {
+                this.renderMasterDataCard(response.data);
+            }
+        } catch (error) {
+            console.error('Error loading master data:', error);
+        }
+    }
+
+    renderMasterDataCard(masterData) {
+        let masterCard = document.getElementById('masterDataCard');
+        if (!masterCard) {
+            masterCard = document.createElement('div');
+            masterCard.id = 'masterDataCard';
+            masterCard.className = 'chart-card mb-4';
+            const summaryRow = document.querySelector('.row.mb-4');
+            summaryRow?.parentNode.insertBefore(masterCard, summaryRow.nextSibling);
+        }
+        masterCard.innerHTML = `
+            <h5 class="mb-3"><i class="fas fa-database me-2"></i>Master Data Info</h5>
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="text-center">
+                        <h6 class="text-muted">Budget Bulanan</h6>
+                        <h4 class="text-primary">${masterData.budget || 0} Ton</h4>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-center">
+                        <h6 class="text-muted">SPH Panen</h6>
+                        <h4 class="text-info">${masterData.sphPanen || 130}</h4>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-center">
+                        <h6 class="text-muted">Luas TM</h6>
+                        <h4 class="text-success">${masterData.luasTM || 0} Ha</h4>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-center">
+                        <h6 class="text-muted">PKK</h6>
+                        <h4 class="text-warning">${masterData.pkk || 85}%</h4>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+}
+
+// Helper untuk konversi tanggal Google Sheet ke input type=date
+function toInputDate(dateString) {
+    if (!dateString) return '';
+    const d = new Date(dateString);
+    if (isNaN(d)) return '';
+    return d.toISOString().split('T')[0];
+}
+
+// Dummy getCurrentUser kalau belum implementasi login
+function getCurrentUser() { return 'User'; }
+
+// Loading spinner
+function showLoading(show = true) {
+    let el = document.getElementById('globalLoadingSpinner');
+    if (!el) {
+        el = document.createElement('div');
+        el.id = 'globalLoadingSpinner';
+        el.innerHTML = `
+            <div class="position-fixed top-50 start-50 translate-middle" style="z-index:9999">
+                <div class="spinner-border text-primary" style="width:4rem;height:4rem;" role="status">
+                  <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(el);
+    }
+    el.style.display = show ? 'block' : 'none';
+    if (!show) setTimeout(() => el.remove(), 500);
+}
+
+// == INIT ==
+document.addEventListener('DOMContentLoaded', () => {
+    window.dailyDashboard = new DailyDashboard();
+});
+
+// HTML onclick handler
+function applyFilters()   { window.dailyDashboard?.applyFilters(); }
+function resetFilters()   { window.dailyDashboard?.resetFilters(); }
+function exportData()     { window.dailyDashboard?.exportData(); }
+function refreshData()    { window.dailyDashboard?.loadDashboardData(); }
