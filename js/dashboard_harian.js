@@ -7,63 +7,23 @@ class DailyDashboard {
         this.kebunDivisiMap = {};
         this.charts = {};
         this.dataTable = null;
+  
+          // Pastikan fungsi-fungsi utilitas sudah ada dari main.js
+        if (typeof requireAuth !== 'function' || !requireAuth()) {
+            return; // Hentikan jika belum login
+        }
+        
         this.initializeDashboard();
     }
-
+    
     async initializeDashboard() {
         this.setDefaultDates();
         this.initializeEventListeners();
         await this.loadInitialData();
-        await this.loadDashboardData();
     }
 
-    async loadInitialData() {
-        try {
-            const response = await callAPI('getInitialData', {});
-            if (response.success) {
-                this.kebunDivisiMap = response.data.kebunDivisiMap;
-                this.populateKebunDropdown();
-            }
-        } catch (error) {
-            console.error('Error loading initial data:', error);
-            showAlert('Gagal memuat data awal', 'warning');
-        }
-    }
 
-    populateKebunDropdown() {
-        const kebunSelect = document.getElementById('kebunFilter');
-        if (!kebunSelect) return;
-        
-        kebunSelect.innerHTML = '<option value="">Semua Kebun</option>';
-        
-        Object.keys(this.kebunDivisiMap).forEach(kebun => {
-            const option = document.createElement('option');
-            option.value = kebun;
-            option.textContent = kebun;
-            kebunSelect.appendChild(option);
-        });
 
-        // Add event listener for kebun change
-        kebunSelect.addEventListener('change', (e) => {
-            this.updateDivisiDropdown(e.target.value);
-        });
-    }
-
-    updateDivisiDropdown(selectedKebun) {
-        const divisiSelect = document.getElementById('divisiFilter');
-        if (!divisiSelect) return;
-        
-        divisiSelect.innerHTML = '<option value="">Semua Divisi</option>';
-        
-        if (selectedKebun && this.kebunDivisiMap[selectedKebun]) {
-            this.kebunDivisiMap[selectedKebun].forEach(divisi => {
-                const option = document.createElement('option');
-                option.value = divisi;
-                option.textContent = divisi;
-                divisiSelect.appendChild(option);
-            });
-        }
-    }
 
     setDefaultDates() {
         const today = new Date();
@@ -76,50 +36,51 @@ class DailyDashboard {
         if (endDateInput) endDateInput.value = today.toISOString().split('T')[0];
     }
 
-    initializeEventListeners() {
-        // Filter button
-        const filterBtn = document.getElementById('filterBtn');
-        if (filterBtn) {
-            filterBtn.addEventListener('click', () => this.applyFilters());
-        }
+    initEventListeners() {
+        // Event button (harus ada di HTML)
+        document.getElementById('filterBtn')?.addEventListener('click', () => this.applyFilters());
+        document.getElementById('exportBtn')?.addEventListener('click', () => this.exportData());
+        document.getElementById('resetBtn')?.addEventListener('click', () => this.resetFilters());
+        document.getElementById('refreshBtn')?.addEventListener('click', () => this.loadDashboardData());
+        document.getElementById('kebunFilter')?.addEventListener('change', e => this.updateDivisiDropdown(e.target.value));
+    }
 
-        // Export button
-        const exportBtn = document.getElementById('exportBtn');
-        if (exportBtn) {
-            exportBtn.addEventListener('click', () => this.exportData());
-        }
-
-        // Refresh button
-        const refreshBtn = document.getElementById('refreshBtn');
-        if (refreshBtn) {
-            refreshBtn.addEventListener('click', () => this.loadDashboardData());
+    async loadInitialData() {
+        try {
+            const response = await callAPI('getInitialData', {});
+            if (response.success) {
+                this.kebunDivisiMap = response.data.kebunDivisiMap;
+                this.populateKebunDropdown();
+            }
+        } catch (error) {
+            showAlert('Gagal memuat data awal', 'warning');
         }
     }
 
-    async loadDashboardData() {
-        try {
-            showLoading(true);
-            
-            const filters = this.getFilters();
-            const response = await callAPI('getDailyDashboardData', { filters });
-            
-            if (response.success) {
-                this.productionData = response.data.tableData || [];
-                this.filteredData = this.productionData;
-                
-                this.updateKPICards(response.data.kpis || {});
-                this.updateCharts(response.data.chartData || {});
-                this.updateDataTable();
-                
-                showAlert('Data berhasil dimuat', 'success', 2000);
-            } else {
-                throw new Error(response.error || 'Gagal memuat data');
-            }
-        } catch (error) {
-            console.error('Error loading dashboard data:', error);
-            showAlert('Gagal memuat data dashboard: ' + error.message, 'danger');
-        } finally {
-            showLoading(false);
+    populateKebunDropdown() {
+        const kebunSelect = document.getElementById('kebunFilter');
+        if (!kebunSelect) return;
+        kebunSelect.innerHTML = '<option value="">Semua Kebun</option>';
+        Object.keys(this.kebunDivisiMap).forEach(kebun => {
+            const option = document.createElement('option');
+            option.value = kebun;
+            option.textContent = kebun;
+            kebunSelect.appendChild(option);
+        });
+        // Divisi akan diupdate by change di eventListener
+    }
+
+    updateDivisiDropdown(selectedKebun) {
+        const divisiSelect = document.getElementById('divisiFilter');
+        if (!divisiSelect) return;
+        divisiSelect.innerHTML = '<option value="">Semua Divisi</option>';
+        if (selectedKebun && this.kebunDivisiMap[selectedKebun]) {
+            this.kebunDivisiMap[selectedKebun].forEach(divisi => {
+                const option = document.createElement('option');
+                option.value = divisi;
+                option.textContent = divisi;
+                divisiSelect.appendChild(option);
+            });
         }
     }
 
@@ -132,10 +93,52 @@ class DailyDashboard {
         };
     }
 
-    // MISSING FUNCTION - Added applyFilters
+    async loadDashboardData() {
+        try {
+            showLoading(true);
+            const filters = this.getFilters();
+            const response = await callAPI('getDailyDashboardData', { filters });
+            if (response.success) {
+                this.productionData = response.data.tableData || [];
+                this.filteredData = this.productionData;
+                this.updateKPICards(response.data.kpis || {});
+                this.updateCharts(response.data.chartData || {});
+                this.updateDataTable();
+                showAlert('Data berhasil dimuat', 'success', 2000);
+            } else {
+                throw new Error(response.error || 'Gagal memuat data');
+            }
+        } catch (error) {
+            showAlert('Gagal memuat data dashboard: ' + error.message, 'danger');
+        } finally {
+            showLoading(false);
+        }
+    }
+
     async applyFilters() {
         await this.loadDashboardData();
     }
+
+    resetFilters() {
+        document.getElementById('startDate').value = '';
+        document.getElementById('endDate').value = '';
+        document.getElementById('kebunFilter').value = '';
+        document.getElementById('divisiFilter').value = '';
+        this.setDefaultDates();
+        this.loadDashboardData();
+        showAlert('Filter telah direset', 'info', 2000);
+    }
+
+    exportData() {
+        if (this.filteredData.length === 0) {
+            showAlert('Tidak ada data untuk diekspor', 'warning');
+            return;
+        }
+        const filename = `data_harian_${new Date().toISOString().split('T')[0]}.csv`;
+        exportToCSV(this.filteredData, filename);
+        showAlert('Data berhasil diekspor', 'success');
+    }
+
 
     updateKPICards(kpis) {
         // Update ACV Produksi
@@ -303,16 +306,7 @@ class DailyDashboard {
         }
     }
 
-    // MISSING FUNCTION - Added resetFilters
-    resetFilters() {
-        // Reset all filter inputs
-        document.getElementById('startDate').value = '';
-        document.getElementById('endDate').value = '';
-        document.getElementById('kebunFilter').value = '';
-        document.getElementById('divisiFilter').value = '';
-        
-        // Reset to default dates
-        this.setDefaultDates();
+   
         
         // Clear divisi dropdown
         const divisiSelect = document.getElementById('divisiFilter');
@@ -326,17 +320,7 @@ class DailyDashboard {
         showAlert('Filter telah direset', 'info', 2000);
     }
 
-    exportData() {
-        if (this.filteredData.length === 0) {
-            showAlert('Tidak ada data untuk diekspor', 'warning');
-            return;
-        }
 
-        const filename = `data_harian_${new Date().toISOString().split('T')[0]}.csv`;
-        exportToCSV(this.filteredData, filename);
-        showAlert('Data berhasil diekspor', 'success');
-    }
-}
 
 // Initialize dashboard when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
@@ -425,46 +409,9 @@ function refreshData() {
         window.saveData = () => this.saveData();
     }
 
-    async loadDashboardData() {
-        try {
-            this.showLoading(true);
-            
-            const filters = this.getFilters();
-            const response = await this.callAPI('getDailyDashboardData', { filters });
-            
-            if (response.success) {
-                this.productionData = response.data.tableData;
-                this.filteredData = [...this.productionData];
-                
-                // Update dashboard components
-                this.updateSummaryCards(response.data.kpis);
-                this.renderCharts(response.data.chartData);
-                this.renderDataTable();
-                this.updateMasterDataCard(filters);
-                
-                this.showAlert(`Data berhasil dimuat. ${this.filteredData.length} record ditemukan.`, 'success');
-            } else {
-                throw new Error(response.error || 'Gagal memuat data');
-            }
-            
-        } catch (error) {
-            console.error('Error loading dashboard data:', error);
-            this.showAlert('Gagal memuat data dashboard: ' + error.message, 'danger');
-            // Load demo data as fallback
-            await this.loadDemoData();
-        } finally {
-            this.showLoading(false);
-        }
-    }
 
-    getFilters() {
-        return {
-            startDate: document.getElementById('startDate').value,
-            endDate: document.getElementById('endDate').value,
-            kebun: document.getElementById('kebunFilter').value,
-            divisi: document.getElementById('divisiFilter').value
-        };
-    }
+
+
 
     async updateMasterDataCard(filters) {
         try {
