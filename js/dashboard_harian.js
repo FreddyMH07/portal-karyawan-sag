@@ -36,7 +36,7 @@ class DailyDashboard {
         document.getElementById('resetBtn')?.addEventListener('click', () => this.resetFilters());
         document.getElementById('refreshBtn')?.addEventListener('click', () => this.loadDashboardData());
         document.getElementById('kebunFilter')?.addEventListener('change', e => this.updateDivisiDropdown(e.target.value));
-        // Modal & CRUD events (optional, kalau ada di HTML):
+        // Modal & CRUD events (pastikan handler global juga ada)
         window.addNewRecord = () => this.addNewRecord();
         window.editRecord = (id) => this.editRecord(id);
         window.deleteRecord = (id) => this.deleteRecord(id);
@@ -202,7 +202,7 @@ class DailyDashboard {
                     label: 'Total Produksi (Kg)',
                     data: data,
                     backgroundColor: [
-                        '#28a745', '#007bff', '#ffc107', 
+                        '#28a745', '#007bff', '#ffc107',
                         '#dc3545', '#17a2b8', '#6f42c1'
                     ]
                 }]
@@ -322,24 +322,6 @@ class DailyDashboard {
         }
     }
 
-    function showLoading(show = true) {
-    let el = document.getElementById('globalLoadingSpinner');
-    if (!el) {
-        el = document.createElement('div');
-        el.id = 'globalLoadingSpinner';
-        el.innerHTML = `
-            <div class="position-fixed top-50 start-50 translate-middle" style="z-index:9999">
-                <div class="spinner-border text-primary" style="width:4rem;height:4rem;" role="status">
-                  <span class="visually-hidden">Loading...</span>
-                </div>
-            </div>
-        `;
-        document.body.appendChild(el);
-    }
-    el.style.display = show ? 'block' : 'none';
-    if (!show) setTimeout(() => el.remove(), 500); // hilangkan setelah selesai
-}
-
     renderMasterDataCard(masterData) {
         let masterCard = document.getElementById('masterDataCard');
         if (!masterCard) {
@@ -381,12 +363,32 @@ class DailyDashboard {
     }
 }
 
-// == INIT (panggil cuma sekali, biar gak bentrok) ==
+// == OUTSIDE THE CLASS! ==
+// Loading spinner
+function showLoading(show = true) {
+    let el = document.getElementById('globalLoadingSpinner');
+    if (!el) {
+        el = document.createElement('div');
+        el.id = 'globalLoadingSpinner';
+        el.innerHTML = `
+            <div class="position-fixed top-50 start-50 translate-middle" style="z-index:9999">
+                <div class="spinner-border text-primary" style="width:4rem;height:4rem;" role="status">
+                  <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(el);
+    }
+    el.style.display = show ? 'block' : 'none';
+    if (!show) setTimeout(() => el.remove(), 500);
+}
+
+// == INIT ==
 document.addEventListener('DOMContentLoaded', () => {
     window.dailyDashboard = new DailyDashboard();
 });
 
-// == Global handler untuk HTML onclick, dsb ==
+// == HTML onclick handler (supaya ga error di HTML inline)==
 function applyFilters()   { window.dailyDashboard?.applyFilters(); }
 function resetFilters()   { window.dailyDashboard?.resetFilters(); }
 function exportData()     { window.dailyDashboard?.exportData(); }
