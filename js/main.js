@@ -265,23 +265,29 @@ function exportToCSV(data, filename = 'export.csv') {
  * Call on each page except login.
  */
 function initializePage() {
-    const user = getCurrentUser();
-    if (!user) {
+    // Ganti jadi getValidSession()
+    const session = getValidSession();
+    if (!session || !session.user) {
         window.location.replace('login.html');
         return;
     }
-    currentUser = user;
+    // Set user global (biar dashboard bisa akses window.currentUser)
+    currentUser = session.user;
+    window.currentUser = currentUser; // (optional, biar semua JS bisa akses)
+
+    // Update header (jika ada)
     const userNameElement = document.getElementById('userName');
     if (userNameElement) userNameElement.textContent = currentUser.name || currentUser.email;
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) logoutBtn.addEventListener('click', logout);
 
-    // Tooltip Bootstrap
+    // Bootstrap tooltips
     if (window.bootstrap) {
         [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
             .map(el => new bootstrap.Tooltip(el));
     }
 }
+
 
 
 /**
