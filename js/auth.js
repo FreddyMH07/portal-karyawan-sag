@@ -1,4 +1,4 @@
-// js/auth.js (VERSI BARU YANG SUDAH DIPERBAIKI)
+// js/auth.js (VERSI FINAL YANG DISESUAIKAN)
 
 /**
  * Memeriksa apakah ada sesi yang valid di localStorage.
@@ -38,23 +38,52 @@ function getValidSession() {
     }
 }
 
+
 /**
  * Menangani klik pada kartu portal di halaman utama.
- * (Tidak ada perubahan di sini, tetap sama)
+ * Fungsi ini memetakan portalId ke izin yang sesuai di backend.
+ * @param {string} portalId - Nama portal dari atribut onclick (misal: 'produksi', 'hr', 'umum')
  */
-// auth.js
-function accessPortal(portalId) { // portalId bisa 'produksi', 'hr', 'umum'
-    
-    // Anda perlu membuat pemetaan manual di sini
-    const permissionMap = {
-        'produksi': 'DATA_HARIAN',
-        'hr': 'ABSENSI', // atau 'BOOKING'? Anda harus memilih satu.
-        'umum': 'ASSET' // Ini hanya asumsi
-    };
-    
-    const requiredPermission = permissionMap[portalId];
+function accessPortal(portalId) {
+    let hasAccess = false;
+    let requiredPermissions = [];
 
-    if (hasPermission(requiredPermission)) { // Memeriksa izin seperti 'DATA_HARIAN'
+    // Gunakan 'switch' untuk memetakan portalId ke izin yang dibutuhkan dari backend
+    switch (portalId) {
+        case 'produksi':
+            // Untuk mengakses Portal Produksi, user harus punya izin 'DATA_HARIAN'
+            requiredPermissions = ['DATA_HARIAN'];
+            break;
+
+        case 'hr':
+            // Portal HR bisa diakses jika user punya izin 'ABSENSI' ATAU 'BOOKING' ATAU 'USERS'
+            // Kita masukkan semua kemungkinan izin ke dalam array
+            requiredPermissions = ['ABSENSI', 'BOOKING', 'USERS'];
+            break;
+
+        case 'umum':
+            // Asumsi Portal Umum berisi data Aset dan KPI
+            // Bisa diakses jika user punya izin 'ASSET' ATAU 'KPI'
+            requiredPermissions = ['ASSET', 'KPI'];
+            break;
+
+        default:
+            // Jika portalId tidak dikenal, langsung tolak akses
+            showAlert('Portal tidak dikenal.', 'warning');
+            return;
+    }
+
+    // Loop untuk memeriksa apakah user punya SALAH SATU dari izin yang dibutuhkan.
+    // Fungsi hasPermission() ini ada di main.js dan akan bekerja dengan benar.
+    for (const permission of requiredPermissions) {
+        if (hasPermission(permission)) {
+            hasAccess = true;
+            break; // Jika satu saja izin terpenuhi, langsung beri akses & hentikan loop.
+        }
+    }
+
+    // Terakhir, arahkan pengguna jika punya akses, atau tampilkan pesan error jika tidak.
+    if (hasAccess) {
         window.location.href = `${portalId}.html`;
     } else {
         showAlert('Anda tidak memiliki izin untuk mengakses portal ini.', 'danger');
