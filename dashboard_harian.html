@@ -17,7 +17,6 @@
                 <img src="assets/logo-PTSAG.png" alt="Logo" height="40" class="me-2">
                 <span>Dashboard Harian</span>
             </a>
-            
             <div class="navbar-nav ms-auto">
                 <a class="nav-link" href="produksi.html">
                     <i class="fas fa-arrow-left me-1"></i>Kembali
@@ -35,10 +34,10 @@
                     <p class="text-muted mb-0">Monitoring produksi harian dengan filter dinamis</p>
                 </div>
                 <div class="col-md-6 text-end">
-                    <button class="btn btn-outline-primary me-2" onclick="refreshData()">
+                    <button class="btn btn-outline-primary me-2" id="refreshBtn">
                         <i class="fas fa-sync-alt me-1"></i>Refresh
                     </button>
-                    <button class="btn btn-success" onclick="exportData()">
+                    <button class="btn btn-success" id="exportBtn">
                         <i class="fas fa-file-excel me-1"></i>Export Excel
                     </button>
                 </div>
@@ -46,7 +45,7 @@
         </div>
 
         <!-- Filters -->
-        <div class="filter-card">
+        <div class="filter-card mt-3 mb-4 p-3 bg-white rounded shadow-sm">
             <h5 class="mb-3"><i class="fas fa-filter me-2"></i>Filter Data</h5>
             <div class="row g-3">
                 <div class="col-md-3">
@@ -59,34 +58,22 @@
                 </div>
                 <div class="col-md-3">
                     <label class="form-label">Kebun (PT)</label>
-                    <select class="form-select" id="kebunFilter">
-                        <option value="">Semua Kebun</option>
-                        <option value="PT. PAL">PT. PAL</option>
-                        <option value="PT. LSP RS">PT. LSP RS</option>
-                        <option value="PT. LSP PR">PT. LSP PR</option>
-                        <option value="CANDIMAS">CANDIMAS</option>
-                        <option value="PT. HSBS">PT. HSBS</option>
-                    </select>
+                    <select class="form-select" id="kebunFilter"></select>
                 </div>
                 <div class="col-md-3">
                     <label class="form-label">Divisi</label>
                     <select class="form-select" id="divisiFilter">
                         <option value="">Semua Divisi</option>
-                        <option value="Divisi 1">DIVISI 1</option>
-                        <option value="Divisi 2">DIVISI 1</option>
-                        <option value="Divisi 3">DIVISI 1</option>
-                        <option value="Divisi 4">DIVISI 1</option>
-                         <option value="INTI">INTI</option>
-                         <option value="PLASMA">PLASMA</option>
+                        <!-- Divisi diinject via JS -->
                     </select>
                 </div>
             </div>
             <div class="row mt-3">
                 <div class="col-12">
-                    <button class="btn btn-primary" onclick="applyFilters()">
+                    <button class="btn btn-primary" id="filterBtn">
                         <i class="fas fa-search me-1"></i>Terapkan Filter
                     </button>
-                    <button class="btn btn-outline-secondary ms-2" onclick="resetFilters()">
+                    <button class="btn btn-outline-secondary ms-2" id="resetBtn">
                         <i class="fas fa-undo me-1"></i>Reset
                     </button>
                 </div>
@@ -97,9 +84,7 @@
         <div class="row mb-4">
             <div class="col-lg-3 col-md-6 mb-3">
                 <div class="stat-card">
-                    <div class="stat-icon bg-success">
-                        <i class="fas fa-weight-hanging"></i>
-                    </div>
+                    <div class="stat-icon bg-success"><i class="fas fa-weight-hanging"></i></div>
                     <div class="stat-content">
                         <h6>Total Produksi</h6>
                         <h4 id="totalProduksi">-</h4>
@@ -109,9 +94,7 @@
             </div>
             <div class="col-lg-3 col-md-6 mb-3">
                 <div class="stat-card">
-                    <div class="stat-icon bg-info">
-                        <i class="fas fa-seedling"></i>
-                    </div>
+                    <div class="stat-icon bg-info"><i class="fas fa-seedling"></i></div>
                     <div class="stat-content">
                         <h6>Total JJG</h6>
                         <h4 id="totalJJG">-</h4>
@@ -121,9 +104,7 @@
             </div>
             <div class="col-lg-3 col-md-6 mb-3">
                 <div class="stat-card">
-                    <div class="stat-icon bg-warning">
-                        <i class="fas fa-chart-bar"></i>
-                    </div>
+                    <div class="stat-icon bg-warning"><i class="fas fa-chart-bar"></i></div>
                     <div class="stat-content">
                         <h6>Rata-rata BJR</h6>
                         <h4 id="avgBJR">-</h4>
@@ -133,9 +114,7 @@
             </div>
             <div class="col-lg-3 col-md-6 mb-3">
                 <div class="stat-card">
-                    <div class="stat-icon bg-danger">
-                        <i class="fas fa-percentage"></i>
-                    </div>
+                    <div class="stat-icon bg-danger"><i class="fas fa-percentage"></i></div>
                     <div class="stat-content">
                         <h6>ACV Production</h6>
                         <h4 id="acvProduction">-</h4>
@@ -150,7 +129,7 @@
             <div class="col-lg-8">
                 <div class="chart-card">
                     <h5 class="mb-3">Trend Produksi Harian</h5>
-                    <canvas id="productionChart" height="100"></canvas>
+                    <canvas id="trendChart" height="100"></canvas>
                 </div>
             </div>
             <div class="col-lg-4">
@@ -176,6 +155,7 @@
                     <table class="table table-hover" id="dailyProductionTable">
                         <thead>
                             <tr>
+                                <th>No</th>
                                 <th>Tanggal</th>
                                 <th>Kebun</th>
                                 <th>Divisi</th>
@@ -188,10 +168,11 @@
                                 <th>Aksi</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            <!-- Data will be loaded via JavaScript -->
+                        <tbody id="dataTableBody">
+                            <!-- Data will be injected via JS -->
                         </tbody>
                     </table>
+                    <div id="recordCount" class="mt-2"></div>
                 </div>
             </div>
         </div>
@@ -231,6 +212,9 @@
                                     <option value="Divisi 2">Divisi 2</option>
                                     <option value="Divisi 3">Divisi 3</option>
                                     <option value="Divisi 4">Divisi 4</option>
+                                    <option value="Inti">INTI</option>
+                                    <option value="Plasma">PLASMA</option>
+                                    
                                 </select>
                             </div>
                             <div class="col-md-6">
