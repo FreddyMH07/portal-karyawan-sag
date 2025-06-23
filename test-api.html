@@ -45,6 +45,11 @@
     <div id="submitDailyTest"></div>
 </div>
 
+    <div class="test-section">
+    <h3>5. Test Tarik Data Harian (API)</h3>
+    <button onclick="testTarikDataHarian()">Test Tarik Data Harian</button>
+    <div id="tarikDataHarianTest"></div>
+</div>
 
     <div class="test-section">
         <h3>4. Configuration Info</h3>
@@ -278,6 +283,42 @@ async function testSubmitDailyData() {
         `;
     }
 }
+        async function testTarikDataHarian() {
+    const resultDiv = document.getElementById('tarikDataHarianTest');
+    resultDiv.innerHTML = '<div class="info">Testing Tarik Data Harian...</div>';
+
+    // Ganti range tanggal sesuai data sheet kamu
+    const filters = {
+        startDate: '2025-03-01',
+        endDate: '2025-03-10'
+        // kamu bisa tambahkan: kebun, divisi, dll
+        // kebun: 'PT. HSBS',
+        // divisi: 'INTI'
+    };
+
+    try {
+        const response = await fetch(CONFIG.API_BASE_URL, {
+            method: 'POST',
+            redirect: 'follow',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({
+                action: 'getDailyDashboardData',
+                filters: filters
+            })
+        });
+        const result = await response.json();
+
+        resultDiv.innerHTML = `
+            <div class="success">✅ Tarik Data Harian Success</div>
+            <pre>${JSON.stringify(result, null, 2)}</pre>
+        `;
+    } catch (error) {
+        resultDiv.innerHTML = `
+            <div class="error">❌ Tarik Data Harian Failed</div>
+            <pre>${error.message}</pre>
+        `;
+    }
+}
 
         // Auto-run basic tests on page load
         window.addEventListener('load', function() {
@@ -286,5 +327,6 @@ async function testSubmitDailyData() {
             }, 1000);
         });
     </script>
+    
 </body>
 </html>
