@@ -40,6 +40,13 @@
     </div>
 
     <div class="test-section">
+    <h3>5. Submit Data Harian (API)</h3>
+    <button onclick="testSubmitDailyData()">Test Submit Data Harian</button>
+    <div id="submitDailyTest"></div>
+</div>
+
+
+    <div class="test-section">
         <h3>4. Configuration Info</h3>
         <div id="configInfo"></div>
     </div>
@@ -195,6 +202,39 @@
             }
         }
 
+
+
+        async function testSubmitDailyData() {
+    const resultDiv = document.getElementById('submitDailyTest');
+    resultDiv.innerHTML = '<div class="info">Testing submit data harian...</div>';
+
+    // Contoh data harian, sesuaikan dengan DATA_HARIAN_COLUMNS dan urutan kolom di Google Sheet
+    const sampleDailyData = {
+        "Tanggal": "2025-03-02",
+        "Bulan": "March",
+        "Tahun": "2025",
+        "Kebun": "PT. HSBS",
+        "Divisi": "INTI",
+        "AKP Panen": "67%",
+        "Jumlah TK Panen": 16,
+        "Luas Panen (HA)": 25,
+        "JJG Panen (Jjg)": 2306,
+        "JJG Kirim (Jjg)": 1993,
+        "Ketrek": "",
+        "Total JJG Kirim (Jjg)": 1993,
+        "Tonase Panen (Kg)": 23430,
+        "Refraksi (Kg)": 703,
+        "Refraksi (%)": 0.03,
+        "Restant (Jjg)": 313,
+        "BJR Hari ini": 11.76,
+        "Output (Kg/HK)": 1464.38,
+        "Output (Ha/HK)": 1.56,
+        "Budget Harian": "",
+        "Timbang Kebun Harian": 23880,
+        "Timbang PKS Harian": 23430,
+        "Rotasi Panen": 14,
+        "Input By": "API Tester"
+    };
         // Auto-run basic tests on page load
         window.addEventListener('load', function() {
             setTimeout(() => {
