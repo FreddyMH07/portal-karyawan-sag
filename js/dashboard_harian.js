@@ -43,17 +43,19 @@ class DailyDashboard {
         window.saveData = () => this.saveData();
     }
 
-    async loadInitialData() {
-        try {
-            const response = await callAPI('getInitialData', {});
-            if (response.success) {
-                this.kebunDivisiMap = response.data.kebunDivisiMap;
-                this.populateKebunDropdown();
-            }
-        } catch (error) {
-            showAlert('Gagal memuat data awal', 'warning');
+async loadInitialData() {
+    try {
+        const response = await callAPI('getInitialData', {});
+        console.log('RESPONSE getInitialData:', response);
+        if (response.success) {
+            this.kebunDivisiMap = response.data.kebunDivisiMap;
+            console.log('KEBUN MAP:', this.kebunDivisiMap);
+            this.populateKebunDropdown();
         }
+    } catch (error) {
+        showAlert('Gagal memuat data awal', 'warning');
     }
+}
 
     populateKebunDropdown() {
         const kebunSelect = document.getElementById('kebunFilter');
