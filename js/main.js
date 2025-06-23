@@ -183,10 +183,19 @@ function safeNumber(value, def = 0) {
 }
 
 // ===== USER AUTH / SESSION =====
+// GANTI DENGAN KODE INI
 function getCurrentUser() {
     try {
-        const userData = localStorage.getItem('currentUser');
-        return userData ? JSON.parse(userData) : null;
+        // 1. Baca dari 'sag_session' yang benar, sesuai dengan yang disimpan login.js
+        const sessionStr = localStorage.getItem('sag_session');
+        if (!sessionStr) return null;
+
+        // 2. Ubah string JSON menjadi objek
+        const sessionData = JSON.parse(sessionStr);
+        
+        // 3. Kembalikan HANYA objek 'user' dari dalam data sesi tersebut
+        return sessionData.user; 
+
     } catch (e) {
         console.error('Error getCurrentUser:', e);
         return null;
