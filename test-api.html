@@ -204,7 +204,7 @@
 
 
 
-        async function testSubmitDailyData() {
+async function testSubmitDailyData() {
     const resultDiv = document.getElementById('submitDailyTest');
     resultDiv.innerHTML = '<div class="info">Testing submit data harian...</div>';
 
@@ -235,6 +235,50 @@
         "Rotasi Panen": 14,
         "Input By": "API Tester"
     };
+
+    // Contoh user info, bisa dummy asal role "admin"/"manager"/"operator" (harus sesuai permission)
+    const sampleUserInfo = {
+        "id": "testid1",
+        "email": "admin@sag.com",
+        "name": "Freddy API Tester",
+        "role": "admin",
+        "permissions": ["DATA_HARIAN", "BOOKING"],
+        "loginTime": new Date().toISOString()
+    };
+
+    try {
+        const response = await fetch(CONFIG.API_BASE_URL, {
+            method: 'POST',
+            redirect: 'follow',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({
+                action: 'submitDailyData',
+                dailyData: sampleDailyData,
+                userInfo: sampleUserInfo
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            resultDiv.innerHTML = `
+                <div class="success">✅ Submit Data Harian Success</div>
+                <pre>${JSON.stringify(result, null, 2)}</pre>
+            `;
+        } else {
+            resultDiv.innerHTML = `
+                <div class="error">❌ Submit Data Harian Failed</div>
+                <pre>${JSON.stringify(result, null, 2)}</pre>
+            `;
+        }
+    } catch (error) {
+        resultDiv.innerHTML = `
+            <div class="error">❌ Request Failed</div>
+            <pre>${error.message}</pre>
+        `;
+    }
+}
+
         // Auto-run basic tests on page load
         window.addEventListener('load', function() {
             setTimeout(() => {
