@@ -265,23 +265,24 @@ function exportToCSV(data, filename = 'export.csv') {
  * Call on each page except login.
  */
 function initializePage() {
-    const sessionData = getValidSession && getValidSession();
-    if (!sessionData) {
+    const user = getCurrentUser();
+    if (!user) {
         window.location.replace('login.html');
         return;
     }
-    currentUser = sessionData.user;
+    currentUser = user;
     const userNameElement = document.getElementById('userName');
     if (userNameElement) userNameElement.textContent = currentUser.name || currentUser.email;
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) logoutBtn.addEventListener('click', logout);
 
-    // Optional: Initialize Bootstrap tooltips, but safe if not available
+    // Tooltip Bootstrap
     if (window.bootstrap) {
         [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
             .map(el => new bootstrap.Tooltip(el));
     }
 }
+
 
 /**
  * Debounce utility
