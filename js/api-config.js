@@ -6,7 +6,7 @@
 const API_CONFIG = {
   // Production API (existing - enhanced)
   PRODUKSI: {
-    url: 'https://script.google.com/macros/s/AKfycbyB3hMh3GID4NBckUVvbaL_dZwYFfvZnhs5SMg0tarQ2l_kBmPIlkIJvHIMfSTbRBNj9g/exec',
+    url: 'https://script.google.com/macros/s/AKfycbzlXjdPrLyUqqDGkJYqdlhGa0DL9cXtagtTGf4zfXBGrcv5cYikDMrifCcObpWuqrPQvw/exec',
     sheetId: '1UMA4dHaqG6dmJ0kWTq7NPz6xmqnTPSqJpMu4ws7TFjs',
     name: 'Produksi API',
     description: 'Production data management'
@@ -14,7 +14,7 @@ const API_CONFIG = {
   
   // Absensi API (new - to be deployed)
   ABSENSI: {
-    url: 'https://script.google.com/macros/s/AKfycbyimMien-z5J1qfhUv8_9fFHD4whnk8MNJGccqn_zj5NNkW47tr6NxejUCj68mP42UIrg/exec', // Replace after deployment
+    url: 'https://script.google.com/macros/s/AKfycbzJ5pd5sC3idY0H7z4zwyX6DvTVxRyI7o7awuoAP7VfG-wyHGOltIKbJHfYKy2Me9L-_A/exec', // Replace after deployment
     sheetId: '1UaETaH6VgTAG0agxrsoVuUvJYrCbbM3mTErAW6_eviM',
     name: 'Absensi API',
     description: 'Employee attendance management'
@@ -22,7 +22,7 @@ const API_CONFIG = {
   
   // Booking API (new - to be deployed)
   BOOKING: {
-    url: 'https://script.google.com/macros/s/AKfycbxRvyEQ4Yx7HwW1oZh-nTWTwi-YI8QLcPxWb4enQXfi1SbHDCBDiTqjbNFNB9htd6tTMQ/exec', // Replace after deployment
+    url: 'https://script.google.com/macros/s/AKfycbyPexx8tcTcr4uueb3tZvTmrqVcoXZA58r7VV2ZNZNHrTT8xpy3UPNpzXvNRfUBMZBGdQ/exec', // Replace after deployment
     sheetId: '1dPpQKnjNFvVssl12at6hC8416Atmr4GWrNspMRaLOiA',
     name: 'Booking API',
     description: 'Room and facility booking system'
@@ -30,7 +30,7 @@ const API_CONFIG = {
   
   // Asset/KPI API (new - to be deployed)
   ASSET: {
-    url: 'https://script.google.com/macros/s/AKfycbwyFdPS4LuNbUXASgpdoKTZwE_34a-eIYN_kDsqrWBI_HwZMbx2gmz7Y-_OEpxL-uabfA/exec', // Replace after deployment
+    url: 'https://script.google.com/macros/s/AKfycbz51UR2MCv5jYXhAIfadGwueAmOfpBSpI4VjE9YMmPgezXw1RalZ3_pT6lOLSY7v3yv6Q/exec', // Replace after deployment
     sheetId: '1uL8dPo07vIRFc3eOBcahlLVgJG6uIpD67SQlXZA9zNI',
     name: 'Asset/KPI API',
     description: 'Asset management and KPI tracking'
@@ -38,7 +38,7 @@ const API_CONFIG = {
   
   // Users API (new - to be deployed)
   USERS: {
-    url: 'https://script.google.com/macros/s/AKfycbzQkGaQorlqskrLgB6j1MajmDe1HhfAciCR4FaLNZE05czOAHA0wORt2edmQtl61PqByA/exec', // Replace after deployment
+    url: 'https://script.google.com/macros/s/AKfycbw0oC6qCpr8S8LWF3A5OUj6sKYgjE9qlTNtfAt3uKdT2Jpo5QCHfDSGkRGqNnjWrxiAmA/exec', // Replace after deployment
     sheetId: '1YetLgN6ppoHtOjJ9vwzqHlrpoo532BqTKQbmyHNa0ks',
     name: 'Users API',
     description: 'User authentication and management'
