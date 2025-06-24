@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Harian - Portal Produksi SAG</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <link href="css/style.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary fixed-top">
+        <div class="container-fluid">
+            <a class="navbar-brand d-flex align-items-center" href="produksi.html">
+                <img src="assets/logo-PTSAG.png" alt="Logo" height="40" class="me-2">
+                <span>Dashboard Harian</span>
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="produksi.html">
+                    <i class="fas fa-arrow-left me-1"></i>Kembali
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid main-content mt-5">
+        <!-- Header -->
+        <div class="dashboard-header">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <h3><i class="fas fa-calendar-day me-2"></i>Dashboard Harian Produksi</h3>
+                    <p class="text-muted mb-0">Monitoring produksi harian dengan filter dinamis</p>
+                </div>
+                <div class="col-md-6 text-end">
+                    <button class="btn btn-outline-primary me-2" id="refreshBtn">
+                        <i class="fas fa-sync-alt me-1"></i>Refresh
+                    </button>
+                    <button class="btn btn-success" id="exportBtn">
+                        <i class="fas fa-file-excel me-1"></i>Export Excel
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="filter-card mt-3 mb-4 p-3 bg-white rounded shadow-sm">
+            <h5 class="mb-3"><i class="fas fa-filter me-2"></i>Filter Data</h5>
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Tanggal Mulai</label>
+                    <input type="date" class="form-control" id="startDate">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Tanggal Akhir</label>
+                    <input type="date" class="form-control" id="endDate">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Kebun (PT)</label>
+                    <select class="form-select" id="kebunFilter">
+                        <option value="">Semua Kebun</option>
+                        <!-- Isi via JS -->
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Divisi</label>
+                    <select class="form-select" id="divisiFilter">
+                        <option value="">Semua Divisi</option>
+                        <!-- Isi via JS -->
+                    </select>
+                </div>
+            </div>
+            <div class="row mt-3">
+                <div class="col-12">
+                    <button class="btn btn-primary" id="filterBtn">
+                        <i class="fas fa-search me-1"></i>Terapkan Filter
+                    </button>
+                    <button class="btn btn-outline-secondary ms-2" id="resetBtn">
+                        <i class="fas fa-undo me-1"></i>Reset
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- KPI & Summary Cards -->
+        <div class="row mb-4">
+            <div class="col-lg-2 col-md-4 mb-2">
+                <div class="stat-card">
+                    <div class="stat-icon bg-success"><i class="fas fa-balance-scale"></i></div>
+                    <div class="stat-content">
+                        <h6>ACV Produksi</h6>
+                        <h4 id="acvProduksi">-</h4>
+                        <small class="text-muted">%</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-2 col-md-4 mb-2">
+                <div class="stat-card">
+                    <div class="stat-icon bg-info"><i class="fas fa-tree"></i></div>
+                    <div class="stat-content">
+                        <h6>Output/Ha</h6>
+                        <h4 id="outputPerHa">-</h4>
+                        <small class="text-muted">Ton/Ha</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-2 col-md-4 mb-2">
+                <div class="stat-card">
+                    <div class="stat-icon bg-warning"><i class="fas fa-users"></i></div>
+                    <div class="stat-content">
+                        <h6>Output/HK</h6>
+                        <h4 id="outputPerHK">-</h4>
+                        <small class="text-muted">Ton/HK</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-2 col-md-4 mb-2">
+                <div class="stat-card">
+                    <div class="stat-icon bg-danger"><i class="fas fa-percentage"></i></div>
+                    <div class="stat-content">
+                        <h6>Refraksi</h6>
+                        <h4 id="refraksiHarian">-</h4>
+                        <small class="text-muted">%</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-2 col-md-4 mb-2">
+                <div class="stat-card">
+                    <div class="stat-icon bg-secondary"><i class="fas fa-seedling"></i></div>
+                    <div class="stat-content">
+                        <h6>BJR Harian</h6>
+                        <h4 id="bjrHarian">-</h4>
+                        <small class="text-muted">Kg/JJG</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-2 col-md-4 mb-2">
+                <div class="stat-card">
+                    <div class="stat-icon bg-primary"><i class="fas fa-warehouse"></i></div>
+                    <div class="stat-content">
+                        <h6>Restan</h6>
+                        <h4 id="restanHarian">-</h4>
+                        <small class="text-muted">JJG</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="row mb-4">
+            <div class="col-lg-8">
+                <div class="chart-card">
+                    <h5 class="mb-3">Trend Produksi Harian</h5>
+                    <canvas id="trendChart" height="100"></canvas>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="chart-card">
+                    <h5 class="mb-3">Distribusi per Kebun</h5>
+                    <canvas id="kebunChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Table -->
+        <div class="table-card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Data Produksi Harian</h5>
+                <div>
+                    <button class="btn btn-sm btn-outline-primary" onclick="addNewRecord()">
+                        <i class="fas fa-plus me-1"></i>Tambah Data
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="dailyProductionTable">
+                        <thead>
+                            <tr>
+                                <th>No</th>
+                                <th>Tanggal</th>
+                                <th>Kebun</th>
+                                <th>Divisi</th>
+                                <th>Luas Panen (HA)</th>
+                                <th>JJG Panen (Jjg)</th>
+                                <th>Tonase Panen (Kg)</th>
+                                <th>BJR Hari ini</th>
+                                <th>Output (Kg/HK)</th>
+                                <th>Input By</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dataTableBody">
+                            <!-- Data akan di-inject via JS -->
+                        </tbody>
+                    </table>
+                    <div id="recordCount" class="mt-2"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Modal -->
+    <div class="modal fade" id="dataModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalTitle">Tambah Data Produksi</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="dataForm">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Tanggal</label>
+                                <input type="date" class="form-control" id="modalTanggal" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Kebun</label>
+                                <select class="form-select" id="modalKebun" required>
+                                    <option value="">Pilih Kebun</option>
+                                    <!-- Daftar Kebun isi via JS -->
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Divisi</label>
+                                <select class="form-select" id="modalDivisi" required>
+                                    <option value="">Pilih Divisi</option>
+                                    <!-- Daftar Divisi isi via JS -->
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Luas Panen (HA)</label>
+                                <input type="number" class="form-control" id="modalLuasPanen" step="0.01" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">JJG Panen (Jjg)</label>
+                                <input type="number" class="form-control" id="modalJJGPanen" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Tonase Panen (Kg)</label>
+                                <input type="number" class="form-control" id="modalTonase" step="0.1" required>
+                            </div>
+                            <!-- Optional auto field, calculated by JS:
+                            <div class="col-md-6">
+                                <label class="form-label">BJR Hari ini</label>
+                                <input type="number" class="form-control" id="modalBJR" step="0.01" disabled>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Output (Kg/HK)</label>
+                                <input type="number" class="form-control" id="modalOutputHK" step="0.01" disabled>
+                            </div>
+                            -->
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-primary" onclick="saveData()">Simpan</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- New API System -->
+    <script src="js/api-config.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/utils.js"></script>
+    
+    <script>
+        // Initialize page with authentication
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check authentication and permissions
+            if (!authManager.requirePermission('produksi')) {
+                return;
+            }
+            
+            // Initialize page
+            initializePage();
+        });
+
+        let dataTable;
+        let charts = {};
+
+        /**
+         * Initialize page
+         */
+        async function initializePage() {
+            try {
+                showLoading('Loading daily dashboard...');
+                
+                // Initialize DataTable
+                initializeDataTable();
+                
+                // Load dashboard data
+                await loadDashboardData();
+                
+                // Setup event listeners
+                setupEventListeners();
+                
+                hideLoading();
+            } catch (error) {
+                console.error('Error initializing page:', error);
+                hideLoading();
+                showAlert('Error loading dashboard: ' + error.message, 'error');
+            }
+        }
+
+        /**
+         * Initialize DataTable
+         */
+        function initializeDataTable() {
+            dataTable = $('#dailyTable').DataTable({
+                responsive: true,
+                pageLength: 10,
+                order: [[0, 'desc']], // Sort by date descending
+                columns: [
+                    { title: 'Tanggal', data: 'Tanggal' },
+                    { title: 'Kebun', data: 'Kebun' },
+                    { title: 'Divisi', data: 'Divisi' },
+                    { title: 'JJG Panen', data: 'JJG Panen (Jjg)' },
+                    { title: 'Tonase (Kg)', data: 'Tonase Panen (Kg)' },
+                    { title: 'BJR', data: 'BJR Hari ini' },
+                    { title: 'Output (Kg/HK)', data: 'Output (Kg/HK)' }
+                ],
+                columnDefs: [
+                    {
+                        targets: 0, // Date column
+                        render: function(data) {
+                            return formatDate(data);
+                        }
+                    },
+                    {
+                        targets: [3, 4, 5, 6], // Numeric columns
+                        render: function(data) {
+                            return formatNumber(data || 0, 2);
+                        }
+                    }
+                ]
+            });
+        }
+
+        /**
+         * Load dashboard data
+         */
+        async function loadDashboardData() {
+            try {
+                // Get current date filter
+                const dateFilter = document.getElementById('dateFilter')?.value;
+                const filters = {};
+                
+                if (dateFilter) {
+                    filters.startDate = dateFilter;
+                    filters.endDate = dateFilter;
+                }
+                
+                // Load production data
+                const result = await apiService.getProduksiData(filters);
+                
+                if (result.success) {
+                    // Update table
+                    updateDataTable(result.data);
+                    
+                    // Update statistics
+                    updateStatistics(result.data);
+                    
+                    // Update charts
+                    updateCharts(result.data);
+                } else {
+                    showAlert('Error loading data: ' + result.message, 'error');
+                }
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+                showAlert('Error loading data: ' + error.message, 'error');
+            }
+        }
+
+        /**
+         * Update DataTable with new data
+         */
+        function updateDataTable(data) {
+            dataTable.clear();
+            
+            if (data && data.length > 0) {
+                dataTable.rows.add(data);
+            }
+            
+            dataTable.draw();
+        }
+
+        /**
+         * Update statistics cards
+         */
+        function updateStatistics(data) {
+            if (!data || data.length === 0) {
+                // Reset all statistics to 0
+                updateStatCard('totalRecords', 0);
+                updateStatCard('totalTonase', 0, ' Kg');
+                updateStatCard('totalJJG', 0);
+                updateStatCard('avgBJR', 0);
+                return;
+            }
+            
+            const stats = {
+                totalRecords: data.length,
+                totalTonase: data.reduce((sum, item) => sum + (parseFloat(item['Tonase Panen (Kg)']) || 0), 0),
+                totalJJG: data.reduce((sum, item) => sum + (parseFloat(item['JJG Panen (Jjg)']) || 0), 0),
+                avgBJR: data.reduce((sum, item) => sum + (parseFloat(item['BJR Hari ini']) || 0), 0) / data.length
+            };
+            
+            // Update statistics cards
+            updateStatCard('totalRecords', stats.totalRecords);
+            updateStatCard('totalTonase', stats.totalTonase, ' Kg', 2);
+            updateStatCard('totalJJG', stats.totalJJG);
+            updateStatCard('avgBJR', stats.avgBJR, '', 2);
+        }
+
+        /**
+         * Update individual statistic card
+         */
+        function updateStatCard(elementId, value, suffix = '', decimals = 0) {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.textContent = formatNumber(value, decimals) + suffix;
+            }
+        }
+
+        /**
+         * Update charts
+         */
+        function updateCharts(data) {
+            if (!data || data.length === 0) {
+                // Clear charts if no data
+                Object.values(charts).forEach(chart => {
+                    if (chart) chart.destroy();
+                });
+                charts = {};
+                return;
+            }
+            
+            // Group data by kebun for charts
+            const kebunData = groupBy(data, 'Kebun');
+            
+            // Update production chart
+            updateProductionChart(kebunData);
+            
+            // Update BJR chart
+            updateBJRChart(kebunData);
+            
+            // Update efficiency chart
+            updateEfficiencyChart(kebunData);
+        }
+
+        /**
+         * Update production chart
+         */
+        function updateProductionChart(kebunData) {
+            const ctx = document.getElementById('productionChart');
+            if (!ctx) return;
+            
+            // Destroy existing chart
+            if (charts.production) {
+                charts.production.destroy();
+            }
+            
+            const labels = Object.keys(kebunData);
+            const tonaseData = labels.map(kebun => {
+                return kebunData[kebun].reduce((sum, item) => 
+                    sum + (parseFloat(item['Tonase Panen (Kg)']) || 0), 0
+                );
+            });
+            
+            charts.production = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Tonase Panen (Kg)',
+                        data: tonaseData,
+                        backgroundColor: 'rgba(54, 162, 235, 0.8)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Production by Kebun'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Tonase (Kg)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        /**
+         * Update BJR chart
+         */
+        function updateBJRChart(kebunData) {
+            const ctx = document.getElementById('bjrChart');
+            if (!ctx) return;
+            
+            // Destroy existing chart
+            if (charts.bjr) {
+                charts.bjr.destroy();
+            }
+            
+            const labels = Object.keys(kebunData);
+            const bjrData = labels.map(kebun => {
+                const kebunItems = kebunData[kebun];
+                const totalBJR = kebunItems.reduce((sum, item) => 
+                    sum + (parseFloat(item['BJR Hari ini']) || 0), 0
+                );
+                return kebunItems.length > 0 ? totalBJR / kebunItems.length : 0;
+            });
+            
+            charts.bjr = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Average BJR',
+                        data: bjrData,
+                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        borderWidth: 2,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Average BJR by Kebun'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'BJR'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        /**
+         * Update efficiency chart
+         */
+        function updateEfficiencyChart(kebunData) {
+            const ctx = document.getElementById('efficiencyChart');
+            if (!ctx) return;
+            
+            // Destroy existing chart
+            if (charts.efficiency) {
+                charts.efficiency.destroy();
+            }
+            
+            const labels = Object.keys(kebunData);
+            const efficiencyData = labels.map(kebun => {
+                const kebunItems = kebunData[kebun];
+                const totalOutput = kebunItems.reduce((sum, item) => 
+                    sum + (parseFloat(item['Output (Kg/HK)']) || 0), 0
+                );
+                return kebunItems.length > 0 ? totalOutput / kebunItems.length : 0;
+            });
+            
+            charts.efficiency = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Average Output (Kg/HK)',
+                        data: efficiencyData,
+                        backgroundColor: [
+                            'rgba(255, 99, 132, 0.8)',
+                            'rgba(54, 162, 235, 0.8)',
+                            'rgba(255, 205, 86, 0.8)',
+                            'rgba(75, 192, 192, 0.8)',
+                            'rgba(153, 102, 255, 0.8)'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Output Efficiency by Kebun'
+                        },
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        /**
+         * Setup event listeners
+         */
+        function setupEventListeners() {
+            // Date filter
+            const dateFilter = document.getElementById('dateFilter');
+            if (dateFilter) {
+                dateFilter.addEventListener('change', loadDashboardData);
+            }
+            
+            // Refresh button
+            const refreshBtn = document.getElementById('refreshBtn');
+            if (refreshBtn) {
+                refreshBtn.addEventListener('click', loadDashboardData);
+            }
+            
+            // Export button
+            const exportBtn = document.getElementById('exportBtn');
+            if (exportBtn) {
+                exportBtn.addEventListener('click', handleExport);
+            }
+            
+            // Print button
+            const printBtn = document.getElementById('printBtn');
+            if (printBtn) {
+                printBtn.addEventListener('click', handlePrint);
+            }
+        }
+
+        /**
+         * Handle export
+         */
+        async function handleExport() {
+            try {
+                showLoading('Exporting daily data...');
+                
+                const dateFilter = document.getElementById('dateFilter')?.value;
+                const filters = {};
+                
+                if (dateFilter) {
+                    filters.startDate = dateFilter;
+                    filters.endDate = dateFilter;
+                }
+                
+                const result = await apiService.getProduksiData(filters);
+                
+                if (result.success && result.data) {
+                    const filename = `daily_production_${dateFilter || getCurrentDate()}.csv`;
+                    exportToCSV(result.data, filename);
+                    showAlert('Data exported successfully!', 'success');
+                } else {
+                    showAlert('Error exporting data: ' + result.message, 'error');
+                }
+                
+                hideLoading();
+            } catch (error) {
+                console.error('Error exporting data:', error);
+                hideLoading();
+                showAlert('Error exporting data: ' + error.message, 'error');
+            }
+        }
+
+        /**
+         * Handle print
+         */
+        function handlePrint() {
+            window.print();
+        }
+
+        /**
+         * Logout function
+         */
+        function logout() {
+            authManager.logout();
+        }
+    </script>
+</body>
+</html>

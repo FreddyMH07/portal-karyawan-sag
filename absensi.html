@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Absensi Karyawan - Portal Karyawan SAG</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link href="css/style.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-success">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="index.html">
+                <img src="assets/logo-PTSAG.png" alt="SAG" height="30" class="me-2">
+                Portal SAG
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="index.html">
+                            <i class="fas fa-home"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="booking.html">
+                            <i class="fas fa-calendar-check"></i> Booking
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="absensi.html">
+                            <i class="fas fa-clock"></i> Absensi
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="hr.html">
+                            <i class="fas fa-users"></i> HR
+                        </a>
+                    </li>
+                </ul>
+                
+                <ul class="navbar-nav">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user"></i> <span id="userName">User</span>
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container-fluid mt-4">
+        <div class="row">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2><i class="fas fa-clock text-success"></i> Manajemen Absensi</h2>
+                    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#absensiModal">
+                        <i class="fas fa-plus"></i> Input Absensi
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card bg-success text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h6 class="card-title">Hadir Hari Ini</h6>
+                                <h3 id="hadirHariIni">0</h3>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="fas fa-check-circle fa-2x"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-warning text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h6 class="card-title">Terlambat</h6>
+                                <h3 id="terlambat">0</h3>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="fas fa-clock fa-2x"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-danger text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h6 class="card-title">Tidak Hadir</h6>
+                                <h3 id="tidakHadir">0</h3>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="fas fa-times-circle fa-2x"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-info text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h6 class="card-title">Izin/Sakit</h6>
+                                <h3 id="izinSakit">0</h3>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="fas fa-user-clock fa-2x"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label class="form-label">Tanggal Mulai</label>
+                                <input type="date" class="form-control" id="startDate">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Tanggal Selesai</label>
+                                <input type="date" class="form-control" id="endDate">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Departemen</label>
+                                <select class="form-select" id="departemenFilter">
+                                    <option value="">Semua</option>
+                                    <option value="Produksi">Produksi</option>
+                                    <option value="HR">HR</option>
+                                    <option value="Finance">Finance</option>
+                                    <option value="IT">IT</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Status</label>
+                                <select class="form-select" id="statusFilter">
+                                    <option value="">Semua</option>
+                                    <option value="Hadir">Hadir</option>
+                                    <option value="Terlambat">Terlambat</option>
+                                    <option value="Tidak Hadir">Tidak Hadir</option>
+                                    <option value="Izin">Izin</option>
+                                    <option value="Sakit">Sakit</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">&nbsp;</label>
+                                <div class="d-grid">
+                                    <button class="btn btn-primary" onclick="loadAbsensiData()">
+                                        <i class="fas fa-search"></i> Filter
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Absensi Table -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Data Absensi</h5>
+                        <button class="btn btn-outline-success btn-sm" onclick="exportAbsensi()">
+                            <i class="fas fa-download"></i> Export
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>No</th>
+                                        <th>Tanggal</th>
+                                        <th>NIK</th>
+                                        <th>Nama</th>
+                                        <th>Departemen</th>
+                                        <th>Shift</th>
+                                        <th>Jam Masuk</th>
+                                        <th>Jam Keluar</th>
+                                        <th>Status</th>
+                                        <th>Keterangan</th>
+                                        <th>Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="absensiTableBody">
+                                    <tr>
+                                        <td colspan="11" class="text-center">Memuat data...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="mt-3">
+                            <small class="text-muted" id="recordCount">Total: 0 record</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Absensi Modal -->
+    <div class="modal fade" id="absensiModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Input Absensi Karyawan</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="absensiForm">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Tanggal *</label>
+                                <input type="date" class="form-control" id="tanggalAbsensi" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">NIK *</label>
+                                <input type="text" class="form-control" id="nik" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Nama Karyawan *</label>
+                                <input type="text" class="form-control" id="namaKaryawan" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Departemen *</label>
+                                <select class="form-select" id="departemen" required>
+                                    <option value="">Pilih Departemen</option>
+                                    <option value="Produksi">Produksi</option>
+                                    <option value="HR">HR</option>
+                                    <option value="Finance">Finance</option>
+                                    <option value="IT">IT</option>
+                                    <option value="Marketing">Marketing</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Shift *</label>
+                                <select class="form-select" id="shift" required>
+                                    <option value="">Pilih Shift</option>
+                                    <option value="Pagi">Pagi (07:00-15:00)</option>
+                                    <option value="Siang">Siang (15:00-23:00)</option>
+                                    <option value="Malam">Malam (23:00-07:00)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Jam Masuk</label>
+                                <input type="time" class="form-control" id="jamMasuk">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Jam Keluar</label>
+                                <input type="time" class="form-control" id="jamKeluar">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Status Kehadiran *</label>
+                                <select class="form-select" id="statusKehadiran" required>
+                                    <option value="">Pilih Status</option>
+                                    <option value="Hadir">Hadir</option>
+                                    <option value="Terlambat">Terlambat</option>
+                                    <option value="Tidak Hadir">Tidak Hadir</option>
+                                    <option value="Izin">Izin</option>
+                                    <option value="Sakit">Sakit</option>
+                                    <option value="Cuti">Cuti</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Lokasi Check-in</label>
+                                <input type="text" class="form-control" id="lokasiCheckin" placeholder="Otomatis terdeteksi">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Keterangan</label>
+                                <textarea class="form-control" id="keterangan" rows="3"></textarea>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-success" onclick="submitAbsensi()">
+                        <i class="fas fa-save"></i> Simpan Absensi
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- New API System -->
+    <script src="js/api-config.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/utils.js"></script>
+    
+    <script>
+        // Initialize page with authentication
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check authentication and permissions
+            if (!authManager.requirePermission('absensi')) {
+                return;
+            }
+            
+            // Initialize page
+            initializePage();
+        });
+
+        let currentLocation = null;
+
+        /**
+         * Initialize page
+         */
+        async function initializePage() {
+            try {
+                showLoading('Loading attendance data...');
+                
+                // Get user location
+                await getCurrentLocation();
+                
+                // Load attendance data
+                await loadAbsensiData();
+                
+                // Setup event listeners
+                setupEventListeners();
+                
+                // Update current time
+                updateCurrentTime();
+                setInterval(updateCurrentTime, 1000);
+                
+                hideLoading();
+            } catch (error) {
+                console.error('Error initializing page:', error);
+                hideLoading();
+                showAlert('Error loading page: ' + error.message, 'error');
+            }
+        }
+
+        /**
+         * Get current location
+         */
+        async function getCurrentLocation() {
+            if (navigator.geolocation) {
+                try {
+                    const position = await new Promise((resolve, reject) => {
+                        navigator.geolocation.getCurrentPosition(resolve, reject);
+                    });
+                    
+                    currentLocation = {
+                        latitude: position.coords.latitude,
+                        longitude: position.coords.longitude
+                    };
+                    
+                    // Update location display
+                    const locationEl = document.getElementById('currentLocation');
+                    if (locationEl) {
+                        locationEl.textContent = `${currentLocation.latitude.toFixed(6)}, ${currentLocation.longitude.toFixed(6)}`;
+                    }
+                } catch (error) {
+                    console.warn('Location access denied:', error);
+                    showAlert('Location access denied. Manual location entry may be required.', 'warning');
+                }
+            }
+        }
+
+        /**
+         * Update current time display
+         */
+        function updateCurrentTime() {
+            const now = new Date();
+            const timeEl = document.getElementById('currentTime');
+            if (timeEl) {
+                timeEl.textContent = now.toLocaleTimeString('id-ID');
+            }
+            
+            const dateEl = document.getElementById('currentDate');
+            if (dateEl) {
+                dateEl.textContent = formatDate(now, 'long');
+            }
+        }
+
+        /**
+         * Load attendance data
+         */
+        async function loadAbsensiData(filters = {}) {
+            try {
+                const result = await apiService.getAbsensiData(filters);
+                
+                if (result.success) {
+                    displayAbsensiData(result.data);
+                    updateAbsensiStatistics(result.data);
+                } else {
+                    showAlert('Error loading attendance data: ' + result.message, 'error');
+                }
+            } catch (error) {
+                console.error('Error loading attendance data:', error);
+                showAlert('Error loading attendance data: ' + error.message, 'error');
+            }
+        }
+
+        /**
+         * Display attendance data in table
+         */
+        function displayAbsensiData(data) {
+            const tbody = document.getElementById('absensiTableBody');
+            if (!tbody) return;
+            
+            tbody.innerHTML = '';
+            
+            if (!data || data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center">No attendance records found</td></tr>';
+                return;
+            }
+            
+            data.forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${formatDate(item.Tanggal)}</td>
+                    <td>${item.NIK || ''}</td>
+                    <td>${item['Nama Karyawan'] || ''}</td>
+                    <td>${item.Departemen || ''}</td>
+                    <td>${item['Jam Masuk/Keluar'] || ''}</td>
+                    <td>
+                        <span class="badge bg-${getStatusColor(item['Status Kehadiran'])}">${item['Status Kehadiran'] || ''}</span>
+                    </td>
+                    <td>${item.Keterangan || ''}</td>
+                    <td>
+                        <div class="btn-group btn-group-sm">
+                            <button class="btn btn-outline-primary" onclick="editAbsensi(${item.ID}, ${JSON.stringify(item).replace(/"/g, '&quot;')})">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-outline-danger" onclick="deleteAbsensi(${item.ID})">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        /**
+         * Get status color for badge
+         */
+        function getStatusColor(status) {
+            switch(status?.toLowerCase()) {
+                case 'masuk': return 'success';
+                case 'keluar': return 'info';
+                case 'terlambat': return 'warning';
+                case 'alpha': return 'danger';
+                case 'sakit': return 'secondary';
+                case 'izin': return 'primary';
+                default: return 'light';
+            }
+        }
+
+        /**
+         * Update attendance statistics
+         */
+        function updateAbsensiStatistics(data) {
+            if (!data || data.length === 0) return;
+            
+            const today = getCurrentDate();
+            const todayData = data.filter(item => item.Tanggal === today);
+            
+            const stats = {
+                totalToday: todayData.length,
+                masuk: todayData.filter(item => item['Status Kehadiran'] === 'Masuk').length,
+                keluar: todayData.filter(item => item['Status Kehadiran'] === 'Keluar').length,
+                terlambat: todayData.filter(item => item['Status Kehadiran'] === 'Terlambat').length
+            };
+            
+            // Update statistics cards
+            const totalTodayEl = document.getElementById('totalToday');
+            if (totalTodayEl) totalTodayEl.textContent = stats.totalToday;
+            
+            const masukEl = document.getElementById('totalMasuk');
+            if (masukEl) masukEl.textContent = stats.masuk;
+            
+            const keluarEl = document.getElementById('totalKeluar');
+            if (keluarEl) keluarEl.textContent = stats.keluar;
+            
+            const terlambatEl = document.getElementById('totalTerlambat');
+            if (terlambatEl) terlambatEl.textContent = stats.terlambat;
+        }
+
+        /**
+         * Setup event listeners
+         */
+        function setupEventListeners() {
+            // Check-in button
+            const checkInBtn = document.getElementById('checkInBtn');
+            if (checkInBtn) {
+                checkInBtn.addEventListener('click', handleCheckIn);
+            }
+            
+            // Check-out button
+            const checkOutBtn = document.getElementById('checkOutBtn');
+            if (checkOutBtn) {
+                checkOutBtn.addEventListener('click', handleCheckOut);
+            }
+            
+            // Manual attendance form
+            const manualForm = document.getElementById('manualAbsensiForm');
+            if (manualForm) {
+                manualForm.addEventListener('submit', handleManualAbsensi);
+            }
+            
+            // Filter form
+            const filterForm = document.getElementById('filterForm');
+            if (filterForm) {
+                filterForm.addEventListener('submit', handleFilter);
+            }
+            
+            // Export button
+            const exportBtn = document.getElementById('exportBtn');
+            if (exportBtn) {
+                exportBtn.addEventListener('click', handleExport);
+            }
+        }
+
+        /**
+         * Handle check-in
+         */
+        async function handleCheckIn() {
+            const user = authManager.getCurrentUser();
+            
+            if (!user.nik) {
+                showAlert('NIK not found in user profile. Please contact admin.', 'error');
+                return;
+            }
+            
+            try {
+                showLoading('Processing check-in...');
+                
+                const checkInData = {
+                    nik: user.nik || user.id,
+                    namaKaryawan: user.name,
+                    departemen: user.departemen || 'Unknown',
+                    shift: 'Regular',
+                    lokasi: currentLocation ? 
+                        `${currentLocation.latitude}, ${currentLocation.longitude}` : 
+                        'Location not available',
+                    keterangan: 'Check-in via portal',
+                    createdBy: user.name
+                };
+                
+                const result = await apiService.checkIn(checkInData);
+                
+                if (result.success) {
+                    showAlert('Check-in successful!', 'success');
+                    await loadAbsensiData();
+                } else {
+                    showAlert('Check-in failed: ' + result.message, 'error');
+                }
+                
+                hideLoading();
+            } catch (error) {
+                console.error('Error during check-in:', error);
+                hideLoading();
+                showAlert('Check-in error: ' + error.message, 'error');
+            }
+        }
+
+        /**
+         * Handle check-out
+         */
+        async function handleCheckOut() {
+            const user = authManager.getCurrentUser();
+            
+            if (!user.nik) {
+                showAlert('NIK not found in user profile. Please contact admin.', 'error');
+                return;
+            }
+            
+            try {
+                showLoading('Processing check-out...');
+                
+                const checkOutData = {
+                    nik: user.nik || user.id,
+                    namaKaryawan: user.name,
+                    departemen: user.departemen || 'Unknown',
+                    shift: 'Regular',
+                    lokasi: currentLocation ? 
+                        `${currentLocation.latitude}, ${currentLocation.longitude}` : 
+                        'Location not available',
+                    keterangan: 'Check-out via portal',
+                    createdBy: user.name
+                };
+                
+                const result = await apiService.checkOut(checkOutData);
+                
+                if (result.success) {
+                    showAlert('Check-out successful!', 'success');
+                    await loadAbsensiData();
+                } else {
+                    showAlert('Check-out failed: ' + result.message, 'error');
+                }
+                
+                hideLoading();
+            } catch (error) {
+                console.error('Error during check-out:', error);
+                hideLoading();
+                showAlert('Check-out error: ' + error.message, 'error');
+            }
+        }
+
+        /**
+         * Handle manual attendance form
+         */
+        async function handleManualAbsensi(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData.entries());
+            
+            // Validate required fields
+            const requiredFields = ['nik', 'namaKaryawan', 'statusKehadiran'];
+            const errors = validateRequired(
+                Object.fromEntries(requiredFields.map(field => [field, data[field]]))
+            );
+            
+            if (errors.length > 0) {
+                showAlert('Please fill in required fields: ' + errors.join(', '), 'error');
+                return;
+            }
+            
+            try {
+                showLoading('Adding attendance record...');
+                
+                const result = await apiService.addAbsensiData({
+                    tanggal: data.tanggal || getCurrentDate(),
+                    nik: data.nik,
+                    namaKaryawan: data.namaKaryawan,
+                    departemen: data.departemen,
+                    shift: data.shift,
+                    jamMasukKeluar: data.jamMasukKeluar,
+                    statusKehadiran: data.statusKehadiran,
+                    keterangan: data.keterangan,
+                    lokasiCheckInOut: data.lokasiCheckInOut,
+                    createdBy: authManager.getCurrentUser().name
+                });
+                
+                if (result.success) {
+                    showAlert('Attendance record added successfully!', 'success');
+                    e.target.reset();
+                    await loadAbsensiData();
+                    
+                    // Close modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('manualAbsensiModal'));
+                    if (modal) modal.hide();
+                } else {
+                    showAlert('Error adding attendance: ' + result.message, 'error');
+                }
+                
+                hideLoading();
+            } catch (error) {
+                console.error('Error adding attendance:', error);
+                hideLoading();
+                showAlert('Error adding attendance: ' + error.message, 'error');
+            }
+        }
+
+        /**
+         * Handle filter
+         */
+        async function handleFilter(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const filters = Object.fromEntries(formData.entries());
+            
+            // Remove empty filters
+            Object.keys(filters).forEach(key => {
+                if (!filters[key]) delete filters[key];
+            });
+            
+            await loadAbsensiData(filters);
+        }
+
+        /**
+         * Edit attendance record
+         */
+        function editAbsensi(id, data) {
+            // Implementation for edit functionality
+            showAlert('Edit functionality will be implemented', 'info');
+        }
+
+        /**
+         * Delete attendance record
+         */
+        async function deleteAbsensi(id) {
+            if (!confirm('Are you sure you want to delete this attendance record?')) {
+                return;
+            }
+            
+            try {
+                showLoading('Deleting attendance record...');
+                
+                const result = await apiService.makeRequest('ABSENSI', {
+                    action: 'deleteAbsensi',
+                    id: id
+                });
+                
+                if (result.success) {
+                    showAlert('Attendance record deleted successfully!', 'success');
+                    await loadAbsensiData();
+                } else {
+                    showAlert('Error deleting record: ' + result.message, 'error');
+                }
+                
+                hideLoading();
+            } catch (error) {
+                console.error('Error deleting attendance:', error);
+                hideLoading();
+                showAlert('Error deleting record: ' + error.message, 'error');
+            }
+        }
+
+        /**
+         * Handle export
+         */
+        async function handleExport() {
+            try {
+                showLoading('Exporting attendance data...');
+                
+                const result = await apiService.getAbsensiData();
+                
+                if (result.success && result.data) {
+                    exportToCSV(result.data, `absensi_data_${getCurrentDate()}.csv`);
+                    showAlert('Data exported successfully!', 'success');
+                } else {
+                    showAlert('Error exporting data: ' + result.message, 'error');
+                }
+                
+                hideLoading();
+            } catch (error) {
+                console.error('Error exporting data:', error);
+                hideLoading();
+                showAlert('Error exporting data: ' + error.message, 'error');
+            }
+        }
+
+        /**
+         * Logout function
+         */
+        function logout() {
+            authManager.logout();
+        }
+    </script>
+</body>
+</html>

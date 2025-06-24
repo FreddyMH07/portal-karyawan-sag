@@ -1,0 +1,11 @@
+# Abaikan folder dependencies
+node_modules
+
+# Abaikan file environment (jika ada)
+.env
+
+# Abaikan log dan file sistem operasi
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store

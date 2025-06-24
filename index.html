@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal Karyawan - PT Sahabat Agro Group</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="css/style.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary fixed-top">
+        <div class="container-fluid">
+            <a class="navbar-brand d-flex align-items-center" href="index.html">
+                <img src="assets/logo-PTSAG.png" alt="Logo" height="40" class="me-2">
+                <span>Portal Karyawan SAG</span>
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user-circle me-1"></i>
+                            <span id="userName">User</span>
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#"><i class="fas fa-user me-2"></i>Profile</a></li>
+                            <li><a class="dropdown-item" href="#"><i class="fas fa-cog me-2"></i>Settings</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="#" id="logoutBtn"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container-fluid main-content">
+        <!-- Welcome Section -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="welcome-card">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h2 class="mb-2">Selamat Datang di Portal Karyawan</h2>
+                            <p class="text-muted mb-0">PT Sahabat Agro Group - One-stop solution untuk digitalisasi karyawan</p>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <div class="date-time">
+                                <div id="currentDate" class="fw-bold"></div>
+                                <div id="currentTime" class="text-muted"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Menu Cards -->
+        <div class="row g-4">
+            <!-- Portal Produksi -->
+            <div class="col-lg-4 col-md-6">
+                <div class="portal-card" onclick="accessPortal('produksi')">
+                    <div class="portal-icon bg-success">
+                        <i class="fas fa-seedling"></i>
+                    </div>
+                    <div class="portal-content">
+                        <h4>Portal Produksi</h4>
+                        <p>Dashboard panen, rawat, dan upah karyawan kebun</p>
+                        <div class="portal-features">
+                            <span class="badge bg-success-subtle text-success">Dashboard Harian</span>
+                            <span class="badge bg-success-subtle text-success">Analisis Bulanan</span>
+                            <span class="badge bg-success-subtle text-success">Pivot Report</span>
+                        </div>
+                    </div>
+                    <div class="portal-arrow">
+                        <i class="fas fa-chevron-right"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Portal HR -->
+            <div class="col-lg-4 col-md-6">
+                <div class="portal-card" onclick="accessPortal('hr')">
+                    <div class="portal-icon bg-info">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="portal-content">
+                        <h4>Portal HR</h4>
+                        <p>Manajemen SDM, booking ruangan, dan absensi</p>
+                        <div class="portal-features">
+                            <span class="badge bg-info-subtle text-info">Booking Ruangan</span>
+                            <span class="badge bg-info-subtle text-info">Absensi Digital</span>
+                            <span class="badge bg-info-subtle text-info">KPI Management</span>
+                        </div>
+                    </div>
+                    <div class="portal-arrow">
+                        <i class="fas fa-chevron-right"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Portal Umum & Helpdesk -->
+            <div class="col-lg-4 col-md-6">
+                <div class="portal-card" onclick="accessPortal('umum')">
+                    <div class="portal-icon bg-warning">
+                        <i class="fas fa-headset"></i>
+                    </div>
+                    <div class="portal-content">
+                        <h4>Portal Umum & Helpdesk</h4>
+                        <p>Informasi perusahaan dan layanan bantuan</p>
+                        <div class="portal-features">
+                            <span class="badge bg-warning-subtle text-warning">Company Info</span>
+                            <span class="badge bg-warning-subtle text-warning">Helpdesk</span>
+                            <span class="badge bg-warning-subtle text-warning">Pengumuman</span>
+                        </div>
+                    </div>
+                    <div class="portal-arrow">
+                        <i class="fas fa-chevron-right"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="row mt-5">
+            <div class="col-12">
+                <h5 class="mb-3">Ringkasan Hari Ini</h5>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="stat-card">
+                    <div class="stat-icon bg-primary">
+                        <i class="fas fa-calendar-check"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h6>Kehadiran</h6>
+                        <h4 id="attendanceToday">-</h4>
+                        <small class="text-muted">Karyawan hadir</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="stat-card">
+                    <div class="stat-icon bg-success">
+                        <i class="fas fa-weight-hanging"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h6>Produksi</h6>
+                        <h4 id="productionToday">-</h4>
+                        <small class="text-muted">Ton hari ini</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="stat-card">
+                    <div class="stat-icon bg-info">
+                        <i class="fas fa-door-open"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h6>Booking</h6>
+                        <h4 id="bookingToday">-</h4>
+                        <small class="text-muted">Ruangan terpakai</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="stat-card">
+                    <div class="stat-icon bg-warning">
+                        <i class="fas fa-ticket-alt"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h6>Helpdesk</h6>
+                        <h4 id="ticketToday">-</h4>
+                        <small class="text-muted">Tiket aktif</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Access Modal -->
+    <div class="modal fade" id="accessModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Akses Portal</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Portal ini memerlukan verifikasi tambahan. Silakan masukkan password Anda:</p>
+                    <div class="mb-3">
+                        <input type="password" class="form-control" id="portalPassword" placeholder="Password">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-primary" id="confirmAccess">Akses Portal</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script src="js/api-config.js"></script>
+    
+    <script src="js/auth.js"></script>
+    
+        <script src="js/utils.js"></script>
+</body>
+</html>

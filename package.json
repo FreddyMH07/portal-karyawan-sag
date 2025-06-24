@@ -1,0 +1,33 @@
+{
+  "name": "portal-karyawan-sag",
+  "version": "1.0.0",
+  "description": "Portal Karyawan PT Sahabat Agro Group - One-stop solution untuk digitalisasi karyawan dan manajemen operasional",
+  "main": "index.html",
+  "scripts": {
+    "start": "http-server -p 8080 -c-1",
+    "dev": "http-server -p 3000 -c-1 -o",
+    "build": "echo 'Static site - no build required'",
+    "deploy": "echo 'Ready for deployment'"
+  },
+  "keywords": [
+    "portal",
+    "karyawan",
+    "produksi",
+    "hr",
+    "dashboard",
+    "sahabat-agro-group"
+  ],
+  "author": "PT Sahabat Agro Group",
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/portal-karyawan-sag.git"
+  },
+  "homepage": "https://your-username.github.io/portal-karyawan-sag"
+}

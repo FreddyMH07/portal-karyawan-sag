@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal HR - PT Sahabat Agro Group</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="css/style.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary fixed-top">
+        <div class="container-fluid">
+            <a class="navbar-brand d-flex align-items-center" href="index.html">
+                <img src="assets/logo-PTSAG.png" alt="Logo" height="40" class="me-2">
+                <span>Portal HR</span>
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="index.html">
+                            <i class="fas fa-home me-1"></i>Portal Utama
+                        </a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user-circle me-1"></i>
+                            <span id="userName">User</span>
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#"><i class="fas fa-user me-2"></i>Profile</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="#" id="logoutBtn"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid main-content">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-lg-2 col-md-3 sidebar">
+                <ul class="sidebar-nav">
+                    <li>
+                        <a href="booking.html">
+                            <i class="fas fa-door-open"></i>
+                            Booking Ruangan
+                        </a>
+                    </li>
+                    <li>
+                        <a href="absensi.html">
+                            <i class="fas fa-calendar-check"></i>
+                            Absensi Digital
+                        </a>
+                    </li>
+                    <li>
+                        <a href="kpi.html">
+                            <i class="fas fa-chart-line"></i>
+                            KPI Management
+                        </a>
+                    </li>
+                    <li>
+                        <a href="asset.html">
+                            <i class="fas fa-boxes"></i>
+                            Asset Movement
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-lg-10 col-md-9">
+                <!-- Header -->
+                <div class="dashboard-header">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <h3><i class="fas fa-users me-2"></i>Portal HR</h3>
+                            <p class="text-muted mb-0">Manajemen SDM, booking ruangan, dan absensi</p>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <button class="btn btn-outline-primary me-2" onclick="refreshData()">
+                                <i class="fas fa-sync-alt me-1"></i>Refresh
+                            </button>
+                            <button class="btn btn-primary" onclick="quickBooking()">
+                                <i class="fas fa-plus me-1"></i>Quick Booking
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Stats -->
+                <div class="row mb-4">
+                    <div class="col-lg-3 col-md-6 mb-3">
+                        <div class="stat-card">
+                            <div class="stat-icon bg-success">
+                                <i class="fas fa-calendar-check"></i>
+                            </div>
+                            <div class="stat-content">
+                                <h6>Kehadiran Hari Ini</h6>
+                                <h4 id="attendanceToday">-</h4>
+                                <small class="text-muted">Karyawan hadir</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-6 mb-3">
+                        <div class="stat-card">
+                            <div class="stat-icon bg-info">
+                                <i class="fas fa-door-open"></i>
+                            </div>
+                            <div class="stat-content">
+                                <h6>Ruangan Terpakai</h6>
+                                <h4 id="roomsBooked">-</h4>
+                                <small class="text-muted">Dari 10 ruangan</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-6 mb-3">
+                        <div class="stat-card">
+                            <div class="stat-icon bg-warning">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                            <div class="stat-content">
+                                <h6>Rata-rata KPI</h6>
+                                <h4 id="averageKPI">-</h4>
+                                <small class="text-muted">%</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-6 mb-3">
+                        <div class="stat-card">
+                            <div class="stat-icon bg-danger">
+                                <i class="fas fa-boxes"></i>
+                            </div>
+                            <div class="stat-content">
+                                <h6>Asset Movement</h6>
+                                <h4 id="assetMovements">-</h4>
+                                <small class="text-muted">Hari ini</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Menu Cards -->
+                <div class="row g-4">
+                    <div class="col-lg-6 col-md-6">
+                        <div class="portal-card" onclick="location.href='booking.html'">
+                            <div class="portal-icon bg-info">
+                                <i class="fas fa-door-open"></i>
+                            </div>
+                            <div class="portal-content">
+                                <h5>Booking Ruangan</h5>
+                                <p>Sistem booking ruangan dengan QR code dan Google Calendar integration</p>
+                                <div class="portal-features">
+                                    <span class="badge bg-info-subtle text-info">QR Code</span>
+                                    <span class="badge bg-info-subtle text-info">Google Calendar</span>
+                                    <span class="badge bg-info-subtle text-info">Real-time</span>
+                                </div>
+                            </div>
+                            <div class="portal-arrow">
+                                <i class="fas fa-chevron-right"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-6 col-md-6">
+                        <div class="portal-card" onclick="location.href='absensi.html'">
+                            <div class="portal-icon bg-success">
+                                <i class="fas fa-calendar-check"></i>
+                            </div>
+                            <div class="portal-content">
+                                <h5>Absensi Digital</h5>
+                                <p>Sistem absensi digital dengan rekap kehadiran dan dashboard KPI</p>
+                                <div class="portal-features">
+                                    <span class="badge bg-success-subtle text-success">Digital</span>
+                                    <span class="badge bg-success-subtle text-success">Auto Rekap</span>
+                                    <span class="badge bg-success-subtle text-success">Dashboard</span>
+                                </div>
+                            </div>
+                            <div class="portal-arrow">
+                                <i class="fas fa-chevron-right"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-6 col-md-6">
+                        <div class="portal-card" onclick="location.href='kpi.html'">
+                            <div class="portal-icon bg-warning">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                            <div class="portal-content">
+                                <h5>KPI Management</h5>
+                                <p>Input dan monitoring KPI karyawan dengan auto-calculation</p>
+                                <div class="portal-features">
+                                    <span class="badge bg-warning-subtle text-warning">Auto Calculate</span>
+                                    <span class="badge bg-warning-subtle text-warning">Monitoring</span>
+                                    <span class="badge bg-warning-subtle text-warning">Reports</span>
+                                </div>
+                            </div>
+                            <div class="portal-arrow">
+                                <i class="fas fa-chevron-right"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-6 col-md-6">
+                        <div class="portal-card" onclick="location.href='asset.html'">
+                            <div class="portal-icon bg-secondary">
+                                <i class="fas fa-boxes"></i>
+                            </div>
+                            <div class="portal-content">
+                                <h5>Asset Movement</h5>
+                                <p>Tracking movement asset perusahaan (inventaris keluar-masuk)</p>
+                                <div class="portal-features">
+                                    <span class="badge bg-secondary-subtle text-secondary">Tracking</span>
+                                    <span class="badge bg-secondary-subtle text-secondary">Inventory</span>
+                                    <span class="badge bg-secondary-subtle text-secondary">History</span>
+                                </div>
+                            </div>
+                            <div class="portal-arrow">
+                                <i class="fas fa-chevron-right"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Activities -->
+                <div class="row mt-5">
+                    <div class="col-12">
+                        <div class="table-card">
+                            <div class="card-header">
+                                <h5 class="mb-0">Aktivitas Terbaru HR</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-hover" id="recentHRActivity">
+                                        <thead>
+                                            <tr>
+                                                <th>Waktu</th>
+                                                <th>Modul</th>
+                                                <th>Aktivitas</th>
+                                                <th>User</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <!-- Data will be loaded via JavaScript -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Booking Modal -->
+    <div class="modal fade" id="quickBookingModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Quick Booking Ruangan</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="quickBookingForm">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Ruangan</label>
+                                <select class="form-select" id="quickRoom" required>
+                                    <option value="">Pilih Ruangan</option>
+                                    <option value="Meeting Room A">Meeting Room A</option>
+                                    <option value="Meeting Room B">Meeting Room B</option>
+                                    <option value="Conference Hall">Conference Hall</option>
+                                    <option value="Training Room">Training Room</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Tanggal</label>
+                                <input type="date" class="form-control" id="quickDate" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Waktu Mulai</label>
+                                <input type="time" class="form-control" id="quickStartTime" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Waktu Selesai</label>
+                                <input type="time" class="form-control" id="quickEndTime" required>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Keperluan</label>
+                                <input type="text" class="form-control" id="quickPurpose" required>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-primary" onclick="submitQuickBooking()">Book Sekarang</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    
+    <!-- New API System -->
+    <script src="js/api-config.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/utils.js"></script>
+    
+    <script>
+        // Initialize page with authentication
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check authentication and permissions
+            if (!authManager.requirePermission('absensi')) {
+                return;
+            }
+            
+            // Initialize page
+            initializePage();
+        });
+
+        /**
+         * Initialize page
+         */
+        async function initializePage() {
+            try {
+                showLoading('Loading HR dashboard...');
+                
+                // Load dashboard data
+                await loadDashboardData();
+                
+                // Setup event listeners
+                setupEventListeners();
+                
+                hideLoading();
+            } catch (error) {
+                console.error('Error initializing page:', error);
+                hideLoading();
+                showAlert('Error loading HR dashboard: ' + error.message, 'error');
+            }
+        }
+
+        /**
+         * Load dashboard data
+         */
+        async function loadDashboardData() {
+            try {
+                // Load attendance data
+                await loadAttendanceData();
+                
+                // Load user data if admin
+                if (authManager.hasRole('admin') || authManager.hasRole('hr')) {
+                    await loadUserData();
+                }
+                
+                // Load booking data
+                await loadBookingData();
+                
+                // Update statistics
+                updateStatistics();
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+                showAlert('Error loading dashboard data: ' + error.message, 'error');
+            }
+        }
+
+        /**
+         * Load attendance data
+         */
+        async function loadAttendanceData() {
+            try {
+                const today = getCurrentDate();
+                const result = await apiService.getAbsensiData({
+                    startDate: today,
+                    endDate: today
+                });
+                
+                if (result.success) {
+                    displayTodayAttendance(result.data);
+                    updateAttendanceStatistics(result.data);
+                }
+            } catch (error) {
+                console.error('Error loading attendance data:', error);
+            }
+        }
+
+        /**
+         * Display today's attendance
+         */
+        function displayTodayAttendance(data) {
+            const tbody = document.getElementById('todayAttendanceBody');
+            if (!tbody) return;
+            
+            tbody.innerHTML = '';
+            
+            if (!data || data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center">No attendance records for today</td></tr>';
+                return;
+            }
+            
+            data.forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.NIK || ''}</td>
+                    <td>${item['Nama Karyawan'] || ''}</td>
+                    <td>${item.Departemen || ''}</td>
+                    <td>${item['Jam Masuk/Keluar'] || ''}</td>
+                    <td>
+                        <span class="badge bg-${getStatusColor(item['Status Kehadiran'])}">${item['Status Kehadiran'] || ''}</span>
+                    </td>
+                    <td>${item.Keterangan || ''}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        /**
+         * Get status color for badge
+         */
+        function getStatusColor(status) {
+            switch(status?.toLowerCase()) {
+                case 'masuk': return 'success';
+                case 'keluar': return 'info';
+                case 'terlambat': return 'warning';
+                case 'alpha': return 'danger';
+                case 'sakit': return 'secondary';
+                case 'izin': return 'primary';
+                default: return 'light';
+            }
+        }
+
+        /**
+         * Update attendance statistics
+         */
+        function updateAttendanceStatistics(data) {
+            if (!data) return;
+            
+            const stats = {
+                totalToday: data.length,
+                masuk: data.filter(item => item['Status Kehadiran'] === 'Masuk').length,
+                keluar: data.filter(item => item['Status Kehadiran'] === 'Keluar').length,
+                terlambat: data.filter(item => item['Status Kehadiran'] === 'Terlambat').length,
+                alpha: data.filter(item => item['Status Kehadiran'] === 'Alpha').length
+            };
+            
+            // Update statistics cards
+            updateStatCard('totalToday', stats.totalToday);
+            updateStatCard('totalMasuk', stats.masuk);
+            updateStatCard('totalKeluar', stats.keluar);
+            updateStatCard('totalTerlambat', stats.terlambat);
+            updateStatCard('totalAlpha', stats.alpha);
+        }
+
+        /**
+         * Load user data
+         */
+        async function loadUserData() {
+            try {
+                const result = await apiService.getUsers();
+                
+                if (result.success) {
+                    displayUserData(result.data);
+                    updateUserStatistics(result.data);
+                }
+            } catch (error) {
+                console.error('Error loading user data:', error);
+            }
+        }
+
+        /**
+         * Display user data
+         */
+        function displayUserData(data) {
+            const tbody = document.getElementById('usersTableBody');
+            if (!tbody) return;
+            
+            tbody.innerHTML = '';
+            
+            if (!data || data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center">No users found</td></tr>';
+                return;
+            }
+            
+            data.forEach(user => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${user.id}</td>
+                    <td>${user.email}</td>
+                    <td>${user.name}</td>
+                    <td><span class="badge bg-primary">${user.role}</span></td>
+                    <td>
+                        <div class="btn-group btn-group-sm">
+                            <button class="btn btn-outline-primary" onclick="editUser(${user.id})">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-outline-danger" onclick="deleteUser(${user.id})">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        /**
+         * Update user statistics
+         */
+        function updateUserStatistics(data) {
+            if (!data) return;
+            
+            const roleStats = {};
+            data.forEach(user => {
+                const role = user.role || 'unknown';
+                roleStats[role] = (roleStats[role] || 0) + 1;
+            });
+            
+            // Update total users
+            updateStatCard('totalUsers', data.length);
+            
+            // Update role statistics
+            Object.keys(roleStats).forEach(role => {
+                const element = document.getElementById(`total${role.charAt(0).toUpperCase() + role.slice(1)}`);
+                if (element) {
+                    element.textContent = roleStats[role];
+                }
+            });
+        }
+
+        /**
+         * Load booking data
+         */
+        async function loadBookingData() {
+            try {
+                const today = getCurrentDate();
+                const result = await apiService.getBookings({
+                    startDate: today,
+                    endDate: today
+                });
+                
+                if (result.success) {
+                    displayTodayBookings(result.data);
+                    updateBookingStatistics(result.data);
+                }
+            } catch (error) {
+                console.error('Error loading booking data:', error);
+            }
+        }
+
+        /**
+         * Display today's bookings
+         */
+        function displayTodayBookings(data) {
+            const tbody = document.getElementById('todayBookingsBody');
+            if (!tbody) return;
+            
+            tbody.innerHTML = '';
+            
+            if (!data || data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center">No bookings for today</td></tr>';
+                return;
+            }
+            
+            data.forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item['Waktu Mulai/Selesai'] || ''}</td>
+                    <td>${item['Ruangan/Fasilitas'] || ''}</td>
+                    <td>${item.Keperluan || ''}</td>
+                    <td>${item.Pemohon || ''}</td>
+                    <td>${item.Departemen || ''}</td>
+                    <td>
+                        <span class="badge bg-${getBookingStatusColor(item.Status)}">${item.Status || 'Pending'}</span>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        /**
+         * Get booking status color
+         */
+        function getBookingStatusColor(status) {
+            switch(status?.toLowerCase()) {
+                case 'approved': return 'success';
+                case 'rejected': return 'danger';
+                case 'pending': return 'warning';
+                default: return 'secondary';
+            }
+        }
+
+        /**
+         * Update booking statistics
+         */
+        function updateBookingStatistics(data) {
+            if (!data) return;
+            
+            const stats = {
+                totalBookings: data.length,
+                approved: data.filter(item => item.Status === 'Approved').length,
+                pending: data.filter(item => item.Status === 'Pending').length,
+                rejected: data.filter(item => item.Status === 'Rejected').length
+            };
+            
+            // Update booking statistics
+            updateStatCard('totalBookings', stats.totalBookings);
+            updateStatCard('approvedBookings', stats.approved);
+            updateStatCard('pendingBookings', stats.pending);
+            updateStatCard('rejectedBookings', stats.rejected);
+        }
+
+        /**
+         * Update individual statistic card
+         */
+        function updateStatCard(elementId, value) {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.textContent = value || 0;
+            }
+        }
+
+        /**
+         * Update statistics
+         */
+        function updateStatistics() {
+            // This function can be used to update overall statistics
+            // Currently handled by individual load functions
+        }
+
+        /**
+         * Setup event listeners
+         */
+        function setupEventListeners() {
+            // Quick check-in button
+            const quickCheckInBtn = document.getElementById('quickCheckInBtn');
+            if (quickCheckInBtn) {
+                quickCheckInBtn.addEventListener('click', handleQuickCheckIn);
+            }
+            
+            // Quick check-out button
+            const quickCheckOutBtn = document.getElementById('quickCheckOutBtn');
+            if (quickCheckOutBtn) {
+                quickCheckOutBtn.addEventListener('click', handleQuickCheckOut);
+            }
+            
+            // Quick booking form
+            const quickBookingForm = document.getElementById('quickBookingForm');
+            if (quickBookingForm) {
+                quickBookingForm.addEventListener('submit', handleQuickBooking);
+            }
+            
+            // Refresh button
+            const refreshBtn = document.getElementById('refreshBtn');
+            if (refreshBtn) {
+                refreshBtn.addEventListener('click', loadDashboardData);
+            }
+        }
+
+        /**
+         * Handle quick check-in
+         */
+        async function handleQuickCheckIn() {
+            const user = authManager.getCurrentUser();
+            
+            try {
+                showLoading('Processing check-in...');
+                
+                const result = await apiService.checkIn({
+                    nik: user.nik || user.id,
+                    namaKaryawan: user.name,
+                    departemen: user.departemen || 'HR',
+                    createdBy: user.name
+                });
+                
+                if (result.success) {
+                    showAlert('Check-in successful!', 'success');
+                    await loadAttendanceData();
+                } else {
+                    showAlert('Check-in failed: ' + result.message, 'error');
+                }
+                
+                hideLoading();
+            } catch (error) {
+                console.error('Error during check-in:', error);
+                hideLoading();
+                showAlert('Check-in error: ' + error.message, 'error');
+            }
+        }
+
+        /**
+         * Handle quick check-out
+         */
+        async function handleQuickCheckOut() {
+            const user = authManager.getCurrentUser();
+            
+            try {
+                showLoading('Processing check-out...');
+                
+                const result = await apiService.checkOut({
+                    nik: user.nik || user.id,
+                    namaKaryawan: user.name,
+                    departemen: user.departemen || 'HR',
+                    createdBy: user.name
+                });
+                
+                if (result.success) {
+                    showAlert('Check-out successful!', 'success');
+                    await loadAttendanceData();
+                } else {
+                    showAlert('Check-out failed: ' + result.message, 'error');
+                }
+                
+                hideLoading();
+            } catch (error) {
+                console.error('Error during check-out:', error);
+                hideLoading();
+                showAlert('Check-out error: ' + error.message, 'error');
+            }
+        }
+
+        /**
+         * Handle quick booking
+         */
+        async function handleQuickBooking(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData.entries());
+            const user = authManager.getCurrentUser();
+            
+            // Add user info
+            data.pemohon = user.name;
+            data.departemen = user.departemen || 'HR';
+            data.createdBy = user.name;
+            data.tanggalBooking = getCurrentDate();
+            
+            try {
+                showLoading('Creating booking...');
+                
+                const result = await apiService.addBooking(data);
+                
+                if (result.success) {
+                    showAlert('Booking created successfully!', 'success');
+                    e.target.reset();
+                    await loadBookingData();
+                    
+                    // Close modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('quickBookingModal'));
+                    if (modal) modal.hide();
+                } else {
+                    showAlert('Booking failed: ' + result.message, 'error');
+                }
+                
+                hideLoading();
+            } catch (error) {
+                console.error('Error creating booking:', error);
+                hideLoading();
+                showAlert('Booking error: ' + error.message, 'error');
+            }
+        }
+
+        /**
+         * Edit user
+         */
+        function editUser(id) {
+            // Implementation for edit user
+            showAlert('Edit user functionality will be implemented', 'info');
+        }
+
+        /**
+         * Delete user
+         */
+        async function deleteUser(id) {
+            if (!confirm('Are you sure you want to delete this user?')) {
+                return;
+            }
+            
+            try {
+                showLoading('Deleting user...');
+                
+                const result = await apiService.makeRequest('USERS', {
+                    action: 'deleteUser',
+                    id: id
+                });
+                
+                if (result.success) {
+                    showAlert('User deleted successfully!', 'success');
+                    await loadUserData();
+                } else {
+                    showAlert('Error deleting user: ' + result.message, 'error');
+                }
+                
+                hideLoading();
+            } catch (error) {
+                console.error('Error deleting user:', error);
+                hideLoading();
+                showAlert('Error deleting user: ' + error.message, 'error');
+            }
+        }
+
+        /**
+         * Logout function
+         */
+        function logout() {
+            authManager.logout();
+        }
+    </script>
+</body>
+</html>
