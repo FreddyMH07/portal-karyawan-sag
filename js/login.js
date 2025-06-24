@@ -1,279 +1,158 @@
-// Login functionality for Portal Karyawan SAG
-class LoginManager {
-    constructor() {
-        this.initializeEventListeners();
-        this.checkExistingSession();
+/**
+ * Login functionality for Portal Karyawan SAG v2.0
+ */
+
+// Wait for DOM and API service to be ready
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if already logged in
+    if (authManager.isAuthenticated()) {
+        window.location.href = 'index.html';
+        return;
     }
 
-    initializeEventListeners() {
-        // Form submission
-        document.getElementById('loginForm').addEventListener('submit', (e) => {
-            e.preventDefault();
-            this.handleLogin();
-        });
+    // Initialize login form
+    initializeLoginForm();
+    
+    // Add demo credentials info
+    addDemoCredentialsInfo();
+});
 
-        // Google login
-        document.getElementById('googleLogin').addEventListener('click', () => {
-            this.handleGoogleLogin();
-        });
-
-        // Toggle password visibility
-        document.getElementById('togglePassword').addEventListener('click', () => {
-            this.togglePasswordVisibility();
-        });
-
-        // Remember me functionality
-        this.loadRememberedCredentials();
+/**
+ * Initialize login form
+ */
+function initializeLoginForm() {
+    const loginForm = document.getElementById('loginForm');
+    if (!loginForm) {
+        console.error('Login form not found');
+        return;
     }
 
-    async handleLogin() {
-        const email = document.getElementById('email').value;
-        const password = document.getElementById('password').value;
-        const rememberMe = document.getElementById('rememberMe').checked;
+    loginForm.addEventListener('submit', handleLogin);
+}
 
-        if (!email || !password) {
-            this.showAlert('Silakan masukkan email dan password', 'warning');
-            return;
-        }
-
-        this.showLoading(true);
-
-        try {
-            // Simulate API call - replace with actual authentication
-            const loginResult = await this.authenticateUser(email, password);
-            
-            if (loginResult.success) {
-                // Save session
-                this.saveSession(loginResult.user, rememberMe);
-                
-                // Save credentials if remember me is checked
-                if (rememberMe) {
-                    this.saveCredentials(email);
-                }
-
-                this.showAlert('Login berhasil! Mengalihkan...', 'success');
-                
-                // Redirect to main portal
-                setTimeout(() => {
-                    window.location.href = 'index.html';
-                }, 1500);
-            } else {
-                this.showAlert(loginResult.message || 'Email atau password salah', 'danger');
-            }
-        } catch (error) {
-            console.error('Login error:', error);
-            this.showAlert('Terjadi kesalahan saat login. Silakan coba lagi.', 'danger');
-        } finally {
-            this.showLoading(false);
-        }
+/**
+ * Handle login form submission
+ */
+async function handleLogin(e) {
+    e.preventDefault();
+    
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    const submitBtn = document.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    
+    // Validation
+    if (!email || !password) {
+        showAlert('Please enter both email and password', 'error');
+        return;
     }
 
-    async authenticateUser(email, password) {
-        try {
-            console.log('Attempting login for:', email);
-            
-            // Call actual API
-            const response = await callAPI('login', {
-                email: email,
-                password: password
-            });
-            
-            console.log('Login response:', response);
-            
-            if (response.success) {
-                return {
-                    success: true,
-                    user: response.user
-                };
-            } else {
-                return {
-                    success: false,
-                    message: response.message || 'Login gagal'
-                };
-            }
-        } catch (error) {
-            console.error('Authentication error:', error);
-            
-            // Fallback to demo users if API fails
-            console.log('API failed, using demo users...');
-            
-// GANTI SELURUH BLOK INI DI login.js
-  const demoUsers = [
-                {
-                    email: 'admin@sag.com',
-                    password: 'admin123',
-                    name: 'Administrator',
-                    role: 'admin',
-                    permissions: ['DATA_HARIAN', 'BOOKING', 'ABSENSI', 'KPI', 'ASSET', 'MASTER_DATA', 'USERS']
-                },
-                {
-                    email: 'manager@sag.com',
-                    password: 'manager123',
-                    name: 'Manager',
-                    role: 'manager',
-                    permissions: ['DATA_HARIAN', 'BOOKING', 'ABSENSI', 'KPI', 'ASSET']
-                },
-                {
-                    email: 'staff@sag.com',
-                    password: 'staff123',
-                    name: 'Staff',
-                    role: 'staff',
-                    permissions: ['DATA_HARIAN', 'BOOKING']
-                }
-            ];
-
-            const user = demoUsers.find(u => u.email === email && u.password === password);
-            
-            if (user) {
-                return {
-                    success: true,
-                    user: {
-                        id: Date.now(),
-                        email: user.email,
-                        name: user.name,
-                        role: user.role,
-                        permissions: user.permissions,
-                        loginTime: new Date().toISOString()
-                    }
-                };
-            } else {
-                return {
-                    success: false,
-                    message: 'Email atau password salah'
-                };
-            }
-        }
+    if (!isValidEmail(email)) {
+        showAlert('Please enter a valid email address', 'error');
+        return;
     }
-
-
-    async handleGoogleLogin() {
-        this.showLoading(true);
+    
+    // Show loading state
+    setLoadingState(submitBtn, true);
+    
+    try {
+        // Show loading modal
+        showLoadingModal();
         
-        try {
-            // Simulate Google OAuth - replace with actual Google Sign-In
-            await new Promise(resolve => setTimeout(resolve, 2000));
+        const result = await authManager.login(email, password);
+        
+        if (result.success) {
+            showAlert('Login successful! Redirecting...', 'success');
             
-            // Demo Google user
-            const googleUser = {
-                id: 'google_' + Date.now(),
-                email: 'user.google@sahabatagro.co.id',
-                name: 'Google User',
-                role: 'user',
-                permissions: ['umum'],
-                loginTime: new Date().toISOString(),
-                provider: 'google'
-            };
-
-            this.saveSession(googleUser, false);
-            this.showAlert('Login Google berhasil! Mengalihkan...', 'success');
+            // Hide loading modal
+            hideLoadingModal();
             
+            // Redirect after short delay
             setTimeout(() => {
                 window.location.href = 'index.html';
-            }, 1500);
-            
-        } catch (error) {
-            console.error('Google login error:', error);
-            this.showAlert('Gagal login dengan Google. Silakan coba lagi.', 'danger');
-        } finally {
-            this.showLoading(false);
+            }, 1000);
+        } else {
+            hideLoadingModal();
+            showAlert(result.message || 'Login failed. Please check your credentials.', 'error');
         }
-    }
-
-    togglePasswordVisibility() {
-        const passwordInput = document.getElementById('password');
-        const toggleIcon = document.querySelector('#togglePassword i');
+    } catch (error) {
+        console.error('Login error:', error);
+        hideLoadingModal();
         
-        if (passwordInput.type === 'password') {
-            passwordInput.type = 'text';
-            toggleIcon.classList.remove('fa-eye');
-            toggleIcon.classList.add('fa-eye-slash');
+        let errorMessage = 'Login failed. ';
+        if (error.message.includes('fetch')) {
+            errorMessage += 'Please check your internet connection.';
+        } else if (error.message.includes('API')) {
+            errorMessage += 'Service temporarily unavailable. Please try again later.';
         } else {
-            passwordInput.type = 'password';
-            toggleIcon.classList.remove('fa-eye-slash');
-            toggleIcon.classList.add('fa-eye');
+            errorMessage += 'Please try again.';
         }
-    }
-
-    saveSession(user, rememberMe) {
-        const sessionData = {
-            user: user,
-            timestamp: Date.now(),
-            rememberMe: rememberMe
-        };
-
-        localStorage.setItem('sag_session', JSON.stringify(sessionData));
         
-        if (rememberMe) {
-            // Set longer expiration for remember me
-            const expiration = Date.now() + (30 * 24 * 60 * 60 * 1000); // 30 days
-            localStorage.setItem('sag_session_expiry', expiration.toString());
-        } else {
-            // Session expires when browser closes
-            sessionStorage.setItem('sag_temp_session', JSON.stringify(sessionData));
-        }
+        showAlert(errorMessage, 'error');
+    } finally {
+        setLoadingState(submitBtn, false, originalText);
     }
+}
 
-    saveCredentials(email) {
-        localStorage.setItem('sag_remembered_email', email);
+/**
+ * Set loading state for button
+ */
+function setLoadingState(button, loading, originalText = 'Login') {
+    if (loading) {
+        button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Logging in...';
+        button.disabled = true;
+    } else {
+        button.innerHTML = originalText;
+        button.disabled = false;
     }
+}
 
-    loadRememberedCredentials() {
-        const rememberedEmail = localStorage.getItem('sag_remembered_email');
-        if (rememberedEmail) {
-            document.getElementById('email').value = rememberedEmail;
-            document.getElementById('rememberMe').checked = true;
-        }
+/**
+ * Show loading modal
+ */
+function showLoadingModal() {
+    const loadingModal = document.getElementById('loadingModal');
+    if (loadingModal) {
+        const modal = new bootstrap.Modal(loadingModal);
+        modal.show();
     }
+}
 
-    checkExistingSession() {
-        const session = localStorage.getItem('sag_session');
-        const tempSession = sessionStorage.getItem('sag_temp_session');
-        const expiry = localStorage.getItem('sag_session_expiry');
-
-        if (session) {
-            const sessionData = JSON.parse(session);
-            
-            // Check if remember me session is still valid
-            if (expiry && Date.now() < parseInt(expiry)) {
-                window.location.href = 'index.html';
-                return;
-            }
-        }
-
-        if (tempSession) {
-            // Temporary session exists
-            window.location.href = 'index.html';
-            return;
-        }
-    }
-
-    showLoading(show) {
-        const modal = new bootstrap.Modal(document.getElementById('loadingModal'));
-        if (show) {
-            modal.show();
-        } else {
+/**
+ * Hide loading modal
+ */
+function hideLoadingModal() {
+    const loadingModal = document.getElementById('loadingModal');
+    if (loadingModal) {
+        const modal = bootstrap.Modal.getInstance(loadingModal);
+        if (modal) {
             modal.hide();
         }
     }
+}
 
-    showAlert(message, type) {
-        // Remove existing alerts
-        const existingAlerts = document.querySelectorAll('.alert');
-        existingAlerts.forEach(alert => alert.remove());
-
-        // Create new alert
-        const alertDiv = document.createElement('div');
-        alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
-        alertDiv.innerHTML = `
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        `;
-
-        // Insert alert before the form
-        const form = document.getElementById('loginForm');
-        form.parentNode.insertBefore(alertDiv, form);
-
-        // Auto dismiss after 5 seconds
+/**
+ * Show alert message
+ */
+function showAlert(message, type = 'info') {
+    // Remove existing alerts
+    const existingAlerts = document.querySelectorAll('.alert');
+    existingAlerts.forEach(alert => alert.remove());
+    
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-triangle' : 'info-circle'} me-2"></i>
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    const container = document.querySelector('.container');
+    const card = container.querySelector('.card');
+    container.insertBefore(alertDiv, card);
+    
+    // Auto dismiss after 5 seconds for non-error messages
+    if (type !== 'error') {
         setTimeout(() => {
             if (alertDiv.parentNode) {
                 alertDiv.remove();
@@ -282,7 +161,96 @@ class LoginManager {
     }
 }
 
-// Initialize login manager when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    new LoginManager();
+/**
+ * Validate email format
+ */
+function isValidEmail(email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+}
+
+/**
+ * Add demo credentials information
+ */
+function addDemoCredentialsInfo() {
+    const cardBody = document.querySelector('.card-body');
+    if (!cardBody) return;
+    
+    const demoInfo = document.createElement('div');
+    demoInfo.className = 'alert alert-info mt-3';
+    demoInfo.innerHTML = `
+        <h6><i class="fas fa-info-circle me-2"></i>Demo Credentials</h6>
+        <div class="row">
+            <div class="col-md-6">
+                <p class="mb-1"><strong>Admin:</strong></p>
+                <small class="text-muted">admin@sag.com / admin123</small>
+            </div>
+            <div class="col-md-6">
+                <p class="mb-1"><strong>Manager:</strong></p>
+                <small class="text-muted">manager@sag.com / manager123</small>
+            </div>
+        </div>
+        <div class="row mt-2">
+            <div class="col-md-6">
+                <p class="mb-1"><strong>Staff:</strong></p>
+                <small class="text-muted">staff@sag.com / staff123</small>
+            </div>
+            <div class="col-md-6">
+                <p class="mb-1"><strong>HR:</strong></p>
+                <small class="text-muted">hr@sag.com / hr123</small>
+            </div>
+        </div>
+        <hr>
+        <small class="text-muted">
+            <i class="fas fa-exclamation-triangle me-1"></i>
+            Note: Create these users in the admin panel after API deployment
+        </small>
+    `;
+    
+    cardBody.appendChild(demoInfo);
+}
+
+/**
+ * Handle forgot password (placeholder)
+ */
+function handleForgotPassword() {
+    alert('Forgot password functionality will be implemented in the next version. Please contact your administrator.');
+}
+
+/**
+ * Handle register (placeholder)
+ */
+function handleRegister() {
+    alert('User registration is handled by administrators. Please contact your admin to create an account.');
+}
+
+// Add event listeners for forgot password and register links
+document.addEventListener('DOMContentLoaded', function() {
+    const forgotPasswordLink = document.querySelector('a[href="#forgot"]');
+    if (forgotPasswordLink) {
+        forgotPasswordLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            handleForgotPassword();
+        });
+    }
+    
+    const registerLink = document.querySelector('a[href="#register"]');
+    if (registerLink) {
+        registerLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            handleRegister();
+        });
+    }
+});
+
+// Handle Enter key in password field
+document.addEventListener('DOMContentLoaded', function() {
+    const passwordField = document.getElementById('password');
+    if (passwordField) {
+        passwordField.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                document.getElementById('loginForm').dispatchEvent(new Event('submit'));
+            }
+        });
+    }
 });

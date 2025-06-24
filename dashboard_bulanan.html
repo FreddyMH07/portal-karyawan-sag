@@ -350,6 +350,7 @@
         </div>
     </div>
 
+    <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
@@ -362,6 +363,542 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="js/dashboard_bulanan.js"></script>
+    
+    <!-- New API System -->
+    <script src="js/api-config.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/utils.js"></script>
+    
+    <script>
+        // Initialize page with authentication
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check authentication and permissions
+            if (!authManager.requirePermission('produksi')) {
+                return;
+            }
+            
+            // Initialize page
+            initializePage();
+        });
+
+        let dataTable;
+        let charts = {};
+
+        /**
+         * Initialize page
+         */
+        async function initializePage() {
+            try {
+                showLoading('Loading monthly dashboard...');
+                
+                // Set default month to current month
+                setDefaultMonth();
+                
+                // Initialize DataTable
+                initializeDataTable();
+                
+                // Load dashboard data
+                await loadDashboardData();
+                
+                // Setup event listeners
+                setupEventListeners();
+                
+                hideLoading();
+            } catch (error) {
+                console.error('Error initializing page:', error);
+                hideLoading();
+                showAlert('Error loading dashboard: ' + error.message, 'error');
+            }
+        }
+
+        /**
+         * Set default month to current month
+         */
+        function setDefaultMonth() {
+            const now = new Date();
+            const currentMonth = now.getMonth() + 1; // JavaScript months are 0-indexed
+            const currentYear = now.getFullYear();
+            
+            const monthSelect = document.getElementById('monthFilter');
+            const yearSelect = document.getElementById('yearFilter');
+            
+            if (monthSelect) {
+                monthSelect.value = currentMonth;
+            }
+            
+            if (yearSelect) {
+                yearSelect.value = currentYear;
+            }
+        }
+
+        /**
+         * Initialize DataTable
+         */
+        function initializeDataTable() {
+            dataTable = $('#monthlyTable').DataTable({
+                responsive: true,
+                pageLength: 25,
+                order: [[0, 'desc']], // Sort by date descending
+                dom: 'Bfrtip',
+                buttons: [
+                    'copy', 'csv', 'excel', 'pdf', 'print'
+                ],
+                columns: [
+                    { title: 'Tanggal', data: 'Tanggal' },
+                    { title: 'Kebun', data: 'Kebun' },
+                    { title: 'Divisi', data: 'Divisi' },
+                    { title: 'JJG Panen', data: 'JJG Panen (Jjg)' },
+                    { title: 'Tonase (Kg)', data: 'Tonase Panen (Kg)' },
+                    { title: 'BJR', data: 'BJR Hari ini' },
+                    { title: 'Output (Kg/HK)', data: 'Output (Kg/HK)' },
+                    { title: 'Output (Ha/HK)', data: 'Output (Ha/HK)' }
+                ],
+                columnDefs: [
+                    {
+                        targets: 0, // Date column
+                        render: function(data) {
+                            return formatDate(data);
+                        }
+                    },
+                    {
+                        targets: [3, 4, 5, 6, 7], // Numeric columns
+                        render: function(data) {
+                            return formatNumber(data || 0, 2);
+                        }
+                    }
+                ]
+            });
+        }
+
+        /**
+         * Load dashboard data
+         */
+        async function loadDashboardData() {
+            try {
+                // Get filter values
+                const month = document.getElementById('monthFilter')?.value;
+                const year = document.getElementById('yearFilter')?.value;
+                
+                const filters = {};
+                if (month) filters.bulan = month;
+                if (year) filters.tahun = year;
+                
+                // Load production data
+                const result = await apiService.getProduksiData(filters);
+                
+                if (result.success) {
+                    // Update table
+                    updateDataTable(result.data);
+                    
+                    // Update statistics
+                    updateStatistics(result.data);
+                    
+                    // Update charts
+                    updateCharts(result.data);
+                } else {
+                    showAlert('Error loading data: ' + result.message, 'error');
+                }
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+                showAlert('Error loading data: ' + error.message, 'error');
+            }
+        }
+
+        /**
+         * Update DataTable with new data
+         */
+        function updateDataTable(data) {
+            dataTable.clear();
+            
+            if (data && data.length > 0) {
+                dataTable.rows.add(data);
+            }
+            
+            dataTable.draw();
+        }
+
+        /**
+         * Update statistics cards
+         */
+        function updateStatistics(data) {
+            if (!data || data.length === 0) {
+                // Reset all statistics to 0
+                updateStatCard('totalRecords', 0);
+                updateStatCard('totalTonase', 0, ' Kg');
+                updateStatCard('totalJJG', 0);
+                updateStatCard('avgBJR', 0);
+                updateStatCard('avgOutput', 0, ' Kg/HK');
+                updateStatCard('totalLuas', 0, ' Ha');
+                return;
+            }
+            
+            const stats = {
+                totalRecords: data.length,
+                totalTonase: data.reduce((sum, item) => sum + (parseFloat(item['Tonase Panen (Kg)']) || 0), 0),
+                totalJJG: data.reduce((sum, item) => sum + (parseFloat(item['JJG Panen (Jjg)']) || 0), 0),
+                avgBJR: data.reduce((sum, item) => sum + (parseFloat(item['BJR Hari ini']) || 0), 0) / data.length,
+                avgOutput: data.reduce((sum, item) => sum + (parseFloat(item['Output (Kg/HK)']) || 0), 0) / data.length,
+                totalLuas: data.reduce((sum, item) => sum + (parseFloat(item['Luas Panen (HA)']) || 0), 0)
+            };
+            
+            // Update statistics cards
+            updateStatCard('totalRecords', stats.totalRecords);
+            updateStatCard('totalTonase', stats.totalTonase, ' Kg', 2);
+            updateStatCard('totalJJG', stats.totalJJG);
+            updateStatCard('avgBJR', stats.avgBJR, '', 2);
+            updateStatCard('avgOutput', stats.avgOutput, ' Kg/HK', 2);
+            updateStatCard('totalLuas', stats.totalLuas, ' Ha', 2);
+        }
+
+        /**
+         * Update individual statistic card
+         */
+        function updateStatCard(elementId, value, suffix = '', decimals = 0) {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.textContent = formatNumber(value, decimals) + suffix;
+            }
+        }
+
+        /**
+         * Update charts
+         */
+        function updateCharts(data) {
+            if (!data || data.length === 0) {
+                // Clear charts if no data
+                Object.values(charts).forEach(chart => {
+                    if (chart) chart.destroy();
+                });
+                charts = {};
+                return;
+            }
+            
+            // Update monthly trend chart
+            updateMonthlyTrendChart(data);
+            
+            // Update kebun comparison chart
+            updateKebunComparisonChart(data);
+            
+            // Update production distribution chart
+            updateProductionDistributionChart(data);
+            
+            // Update efficiency chart
+            updateEfficiencyChart(data);
+        }
+
+        /**
+         * Update monthly trend chart
+         */
+        function updateMonthlyTrendChart(data) {
+            const ctx = document.getElementById('monthlyTrendChart');
+            if (!ctx) return;
+            
+            // Destroy existing chart
+            if (charts.monthlyTrend) {
+                charts.monthlyTrend.destroy();
+            }
+            
+            // Group data by date
+            const dailyData = groupBy(data, 'Tanggal');
+            const sortedDates = Object.keys(dailyData).sort();
+            
+            const tonaseData = sortedDates.map(date => {
+                return dailyData[date].reduce((sum, item) => 
+                    sum + (parseFloat(item['Tonase Panen (Kg)']) || 0), 0
+                );
+            });
+            
+            const jjgData = sortedDates.map(date => {
+                return dailyData[date].reduce((sum, item) => 
+                    sum + (parseFloat(item['JJG Panen (Jjg)']) || 0), 0
+                );
+            });
+            
+            charts.monthlyTrend = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: sortedDates.map(date => formatDate(date)),
+                    datasets: [
+                        {
+                            label: 'Tonase (Kg)',
+                            data: tonaseData,
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'JJG Panen',
+                            data: jjgData,
+                            borderColor: 'rgba(255, 99, 132, 1)',
+                            backgroundColor: 'rgba(255, 99, 132, 0.1)',
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Monthly Production Trend'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: 'Tonase (Kg)'
+                            }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: 'JJG Panen'
+                            },
+                            grid: {
+                                drawOnChartArea: false,
+                            },
+                        }
+                    }
+                }
+            });
+        }
+
+        /**
+         * Update kebun comparison chart
+         */
+        function updateKebunComparisonChart(data) {
+            const ctx = document.getElementById('kebunComparisonChart');
+            if (!ctx) return;
+            
+            // Destroy existing chart
+            if (charts.kebunComparison) {
+                charts.kebunComparison.destroy();
+            }
+            
+            const kebunData = groupBy(data, 'Kebun');
+            const labels = Object.keys(kebunData);
+            
+            const tonaseData = labels.map(kebun => {
+                return kebunData[kebun].reduce((sum, item) => 
+                    sum + (parseFloat(item['Tonase Panen (Kg)']) || 0), 0
+                );
+            });
+            
+            charts.kebunComparison = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Total Tonase (Kg)',
+                        data: tonaseData,
+                        backgroundColor: [
+                            'rgba(255, 99, 132, 0.8)',
+                            'rgba(54, 162, 235, 0.8)',
+                            'rgba(255, 205, 86, 0.8)',
+                            'rgba(75, 192, 192, 0.8)',
+                            'rgba(153, 102, 255, 0.8)'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Production Comparison by Kebun'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Tonase (Kg)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        /**
+         * Update production distribution chart
+         */
+        function updateProductionDistributionChart(data) {
+            const ctx = document.getElementById('productionDistributionChart');
+            if (!ctx) return;
+            
+            // Destroy existing chart
+            if (charts.productionDistribution) {
+                charts.productionDistribution.destroy();
+            }
+            
+            const kebunData = groupBy(data, 'Kebun');
+            const labels = Object.keys(kebunData);
+            
+            const tonaseData = labels.map(kebun => {
+                return kebunData[kebun].reduce((sum, item) => 
+                    sum + (parseFloat(item['Tonase Panen (Kg)']) || 0), 0
+                );
+            });
+            
+            charts.productionDistribution = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: tonaseData,
+                        backgroundColor: [
+                            'rgba(255, 99, 132, 0.8)',
+                            'rgba(54, 162, 235, 0.8)',
+                            'rgba(255, 205, 86, 0.8)',
+                            'rgba(75, 192, 192, 0.8)',
+                            'rgba(153, 102, 255, 0.8)',
+                            'rgba(255, 159, 64, 0.8)'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Production Distribution by Kebun'
+                        },
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        /**
+         * Update efficiency chart
+         */
+        function updateEfficiencyChart(data) {
+            const ctx = document.getElementById('efficiencyChart');
+            if (!ctx) return;
+            
+            // Destroy existing chart
+            if (charts.efficiency) {
+                charts.efficiency.destroy();
+            }
+            
+            const kebunData = groupBy(data, 'Kebun');
+            const labels = Object.keys(kebunData);
+            
+            const outputData = labels.map(kebun => {
+                const kebunItems = kebunData[kebun];
+                const totalOutput = kebunItems.reduce((sum, item) => 
+                    sum + (parseFloat(item['Output (Kg/HK)']) || 0), 0
+                );
+                return kebunItems.length > 0 ? totalOutput / kebunItems.length : 0;
+            });
+            
+            charts.efficiency = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Average Output (Kg/HK)',
+                        data: outputData,
+                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Efficiency Comparison by Kebun'
+                        }
+                    },
+                    scales: {
+                        r: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        /**
+         * Setup event listeners
+         */
+        function setupEventListeners() {
+            // Month filter
+            const monthFilter = document.getElementById('monthFilter');
+            if (monthFilter) {
+                monthFilter.addEventListener('change', loadDashboardData);
+            }
+            
+            // Year filter
+            const yearFilter = document.getElementById('yearFilter');
+            if (yearFilter) {
+                yearFilter.addEventListener('change', loadDashboardData);
+            }
+            
+            // Refresh button
+            const refreshBtn = document.getElementById('refreshBtn');
+            if (refreshBtn) {
+                refreshBtn.addEventListener('click', loadDashboardData);
+            }
+            
+            // Export button
+            const exportBtn = document.getElementById('exportBtn');
+            if (exportBtn) {
+                exportBtn.addEventListener('click', handleExport);
+            }
+        }
+
+        /**
+         * Handle export
+         */
+        async function handleExport() {
+            try {
+                showLoading('Exporting monthly data...');
+                
+                const month = document.getElementById('monthFilter')?.value;
+                const year = document.getElementById('yearFilter')?.value;
+                
+                const filters = {};
+                if (month) filters.bulan = month;
+                if (year) filters.tahun = year;
+                
+                const result = await apiService.getProduksiData(filters);
+                
+                if (result.success && result.data) {
+                    const filename = `monthly_production_${year || 'all'}_${month || 'all'}.csv`;
+                    exportToCSV(result.data, filename);
+                    showAlert('Data exported successfully!', 'success');
+                } else {
+                    showAlert('Error exporting data: ' + result.message, 'error');
+                }
+                
+                hideLoading();
+            } catch (error) {
+                console.error('Error exporting data:', error);
+                hideLoading();
+                showAlert('Error exporting data: ' + error.message, 'error');
+            }
+        }
+
+        /**
+         * Logout function
+         */
+        function logout() {
+            authManager.logout();
+        }
+    </script>
 </body>
 </html>

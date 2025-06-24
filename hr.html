@@ -311,8 +311,512 @@
         </div>
     </div>
 
+    <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
-    <script src="js/hr.js"></script>
+    
+    <!-- New API System -->
+    <script src="js/api-config.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/utils.js"></script>
+    
+    <script>
+        // Initialize page with authentication
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check authentication and permissions
+            if (!authManager.requirePermission('absensi')) {
+                return;
+            }
+            
+            // Initialize page
+            initializePage();
+        });
+
+        /**
+         * Initialize page
+         */
+        async function initializePage() {
+            try {
+                showLoading('Loading HR dashboard...');
+                
+                // Load dashboard data
+                await loadDashboardData();
+                
+                // Setup event listeners
+                setupEventListeners();
+                
+                hideLoading();
+            } catch (error) {
+                console.error('Error initializing page:', error);
+                hideLoading();
+                showAlert('Error loading HR dashboard: ' + error.message, 'error');
+            }
+        }
+
+        /**
+         * Load dashboard data
+         */
+        async function loadDashboardData() {
+            try {
+                // Load attendance data
+                await loadAttendanceData();
+                
+                // Load user data if admin
+                if (authManager.hasRole('admin') || authManager.hasRole('hr')) {
+                    await loadUserData();
+                }
+                
+                // Load booking data
+                await loadBookingData();
+                
+                // Update statistics
+                updateStatistics();
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+                showAlert('Error loading dashboard data: ' + error.message, 'error');
+            }
+        }
+
+        /**
+         * Load attendance data
+         */
+        async function loadAttendanceData() {
+            try {
+                const today = getCurrentDate();
+                const result = await apiService.getAbsensiData({
+                    startDate: today,
+                    endDate: today
+                });
+                
+                if (result.success) {
+                    displayTodayAttendance(result.data);
+                    updateAttendanceStatistics(result.data);
+                }
+            } catch (error) {
+                console.error('Error loading attendance data:', error);
+            }
+        }
+
+        /**
+         * Display today's attendance
+         */
+        function displayTodayAttendance(data) {
+            const tbody = document.getElementById('todayAttendanceBody');
+            if (!tbody) return;
+            
+            tbody.innerHTML = '';
+            
+            if (!data || data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center">No attendance records for today</td></tr>';
+                return;
+            }
+            
+            data.forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.NIK || ''}</td>
+                    <td>${item['Nama Karyawan'] || ''}</td>
+                    <td>${item.Departemen || ''}</td>
+                    <td>${item['Jam Masuk/Keluar'] || ''}</td>
+                    <td>
+                        <span class="badge bg-${getStatusColor(item['Status Kehadiran'])}">${item['Status Kehadiran'] || ''}</span>
+                    </td>
+                    <td>${item.Keterangan || ''}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        /**
+         * Get status color for badge
+         */
+        function getStatusColor(status) {
+            switch(status?.toLowerCase()) {
+                case 'masuk': return 'success';
+                case 'keluar': return 'info';
+                case 'terlambat': return 'warning';
+                case 'alpha': return 'danger';
+                case 'sakit': return 'secondary';
+                case 'izin': return 'primary';
+                default: return 'light';
+            }
+        }
+
+        /**
+         * Update attendance statistics
+         */
+        function updateAttendanceStatistics(data) {
+            if (!data) return;
+            
+            const stats = {
+                totalToday: data.length,
+                masuk: data.filter(item => item['Status Kehadiran'] === 'Masuk').length,
+                keluar: data.filter(item => item['Status Kehadiran'] === 'Keluar').length,
+                terlambat: data.filter(item => item['Status Kehadiran'] === 'Terlambat').length,
+                alpha: data.filter(item => item['Status Kehadiran'] === 'Alpha').length
+            };
+            
+            // Update statistics cards
+            updateStatCard('totalToday', stats.totalToday);
+            updateStatCard('totalMasuk', stats.masuk);
+            updateStatCard('totalKeluar', stats.keluar);
+            updateStatCard('totalTerlambat', stats.terlambat);
+            updateStatCard('totalAlpha', stats.alpha);
+        }
+
+        /**
+         * Load user data
+         */
+        async function loadUserData() {
+            try {
+                const result = await apiService.getUsers();
+                
+                if (result.success) {
+                    displayUserData(result.data);
+                    updateUserStatistics(result.data);
+                }
+            } catch (error) {
+                console.error('Error loading user data:', error);
+            }
+        }
+
+        /**
+         * Display user data
+         */
+        function displayUserData(data) {
+            const tbody = document.getElementById('usersTableBody');
+            if (!tbody) return;
+            
+            tbody.innerHTML = '';
+            
+            if (!data || data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center">No users found</td></tr>';
+                return;
+            }
+            
+            data.forEach(user => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${user.id}</td>
+                    <td>${user.email}</td>
+                    <td>${user.name}</td>
+                    <td><span class="badge bg-primary">${user.role}</span></td>
+                    <td>
+                        <div class="btn-group btn-group-sm">
+                            <button class="btn btn-outline-primary" onclick="editUser(${user.id})">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-outline-danger" onclick="deleteUser(${user.id})">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        /**
+         * Update user statistics
+         */
+        function updateUserStatistics(data) {
+            if (!data) return;
+            
+            const roleStats = {};
+            data.forEach(user => {
+                const role = user.role || 'unknown';
+                roleStats[role] = (roleStats[role] || 0) + 1;
+            });
+            
+            // Update total users
+            updateStatCard('totalUsers', data.length);
+            
+            // Update role statistics
+            Object.keys(roleStats).forEach(role => {
+                const element = document.getElementById(`total${role.charAt(0).toUpperCase() + role.slice(1)}`);
+                if (element) {
+                    element.textContent = roleStats[role];
+                }
+            });
+        }
+
+        /**
+         * Load booking data
+         */
+        async function loadBookingData() {
+            try {
+                const today = getCurrentDate();
+                const result = await apiService.getBookings({
+                    startDate: today,
+                    endDate: today
+                });
+                
+                if (result.success) {
+                    displayTodayBookings(result.data);
+                    updateBookingStatistics(result.data);
+                }
+            } catch (error) {
+                console.error('Error loading booking data:', error);
+            }
+        }
+
+        /**
+         * Display today's bookings
+         */
+        function displayTodayBookings(data) {
+            const tbody = document.getElementById('todayBookingsBody');
+            if (!tbody) return;
+            
+            tbody.innerHTML = '';
+            
+            if (!data || data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center">No bookings for today</td></tr>';
+                return;
+            }
+            
+            data.forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item['Waktu Mulai/Selesai'] || ''}</td>
+                    <td>${item['Ruangan/Fasilitas'] || ''}</td>
+                    <td>${item.Keperluan || ''}</td>
+                    <td>${item.Pemohon || ''}</td>
+                    <td>${item.Departemen || ''}</td>
+                    <td>
+                        <span class="badge bg-${getBookingStatusColor(item.Status)}">${item.Status || 'Pending'}</span>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        /**
+         * Get booking status color
+         */
+        function getBookingStatusColor(status) {
+            switch(status?.toLowerCase()) {
+                case 'approved': return 'success';
+                case 'rejected': return 'danger';
+                case 'pending': return 'warning';
+                default: return 'secondary';
+            }
+        }
+
+        /**
+         * Update booking statistics
+         */
+        function updateBookingStatistics(data) {
+            if (!data) return;
+            
+            const stats = {
+                totalBookings: data.length,
+                approved: data.filter(item => item.Status === 'Approved').length,
+                pending: data.filter(item => item.Status === 'Pending').length,
+                rejected: data.filter(item => item.Status === 'Rejected').length
+            };
+            
+            // Update booking statistics
+            updateStatCard('totalBookings', stats.totalBookings);
+            updateStatCard('approvedBookings', stats.approved);
+            updateStatCard('pendingBookings', stats.pending);
+            updateStatCard('rejectedBookings', stats.rejected);
+        }
+
+        /**
+         * Update individual statistic card
+         */
+        function updateStatCard(elementId, value) {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.textContent = value || 0;
+            }
+        }
+
+        /**
+         * Update statistics
+         */
+        function updateStatistics() {
+            // This function can be used to update overall statistics
+            // Currently handled by individual load functions
+        }
+
+        /**
+         * Setup event listeners
+         */
+        function setupEventListeners() {
+            // Quick check-in button
+            const quickCheckInBtn = document.getElementById('quickCheckInBtn');
+            if (quickCheckInBtn) {
+                quickCheckInBtn.addEventListener('click', handleQuickCheckIn);
+            }
+            
+            // Quick check-out button
+            const quickCheckOutBtn = document.getElementById('quickCheckOutBtn');
+            if (quickCheckOutBtn) {
+                quickCheckOutBtn.addEventListener('click', handleQuickCheckOut);
+            }
+            
+            // Quick booking form
+            const quickBookingForm = document.getElementById('quickBookingForm');
+            if (quickBookingForm) {
+                quickBookingForm.addEventListener('submit', handleQuickBooking);
+            }
+            
+            // Refresh button
+            const refreshBtn = document.getElementById('refreshBtn');
+            if (refreshBtn) {
+                refreshBtn.addEventListener('click', loadDashboardData);
+            }
+        }
+
+        /**
+         * Handle quick check-in
+         */
+        async function handleQuickCheckIn() {
+            const user = authManager.getCurrentUser();
+            
+            try {
+                showLoading('Processing check-in...');
+                
+                const result = await apiService.checkIn({
+                    nik: user.nik || user.id,
+                    namaKaryawan: user.name,
+                    departemen: user.departemen || 'HR',
+                    createdBy: user.name
+                });
+                
+                if (result.success) {
+                    showAlert('Check-in successful!', 'success');
+                    await loadAttendanceData();
+                } else {
+                    showAlert('Check-in failed: ' + result.message, 'error');
+                }
+                
+                hideLoading();
+            } catch (error) {
+                console.error('Error during check-in:', error);
+                hideLoading();
+                showAlert('Check-in error: ' + error.message, 'error');
+            }
+        }
+
+        /**
+         * Handle quick check-out
+         */
+        async function handleQuickCheckOut() {
+            const user = authManager.getCurrentUser();
+            
+            try {
+                showLoading('Processing check-out...');
+                
+                const result = await apiService.checkOut({
+                    nik: user.nik || user.id,
+                    namaKaryawan: user.name,
+                    departemen: user.departemen || 'HR',
+                    createdBy: user.name
+                });
+                
+                if (result.success) {
+                    showAlert('Check-out successful!', 'success');
+                    await loadAttendanceData();
+                } else {
+                    showAlert('Check-out failed: ' + result.message, 'error');
+                }
+                
+                hideLoading();
+            } catch (error) {
+                console.error('Error during check-out:', error);
+                hideLoading();
+                showAlert('Check-out error: ' + error.message, 'error');
+            }
+        }
+
+        /**
+         * Handle quick booking
+         */
+        async function handleQuickBooking(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData.entries());
+            const user = authManager.getCurrentUser();
+            
+            // Add user info
+            data.pemohon = user.name;
+            data.departemen = user.departemen || 'HR';
+            data.createdBy = user.name;
+            data.tanggalBooking = getCurrentDate();
+            
+            try {
+                showLoading('Creating booking...');
+                
+                const result = await apiService.addBooking(data);
+                
+                if (result.success) {
+                    showAlert('Booking created successfully!', 'success');
+                    e.target.reset();
+                    await loadBookingData();
+                    
+                    // Close modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('quickBookingModal'));
+                    if (modal) modal.hide();
+                } else {
+                    showAlert('Booking failed: ' + result.message, 'error');
+                }
+                
+                hideLoading();
+            } catch (error) {
+                console.error('Error creating booking:', error);
+                hideLoading();
+                showAlert('Booking error: ' + error.message, 'error');
+            }
+        }
+
+        /**
+         * Edit user
+         */
+        function editUser(id) {
+            // Implementation for edit user
+            showAlert('Edit user functionality will be implemented', 'info');
+        }
+
+        /**
+         * Delete user
+         */
+        async function deleteUser(id) {
+            if (!confirm('Are you sure you want to delete this user?')) {
+                return;
+            }
+            
+            try {
+                showLoading('Deleting user...');
+                
+                const result = await apiService.makeRequest('USERS', {
+                    action: 'deleteUser',
+                    id: id
+                });
+                
+                if (result.success) {
+                    showAlert('User deleted successfully!', 'success');
+                    await loadUserData();
+                } else {
+                    showAlert('Error deleting user: ' + result.message, 'error');
+                }
+                
+                hideLoading();
+            } catch (error) {
+                console.error('Error deleting user:', error);
+                hideLoading();
+                showAlert('Error deleting user: ' + error.message, 'error');
+            }
+        }
+
+        /**
+         * Logout function
+         */
+        function logout() {
+            authManager.logout();
+        }
+    </script>
 </body>
 </html>

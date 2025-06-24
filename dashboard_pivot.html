@@ -282,6 +282,7 @@
         </div>
     </div>
 
+    <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
@@ -289,6 +290,330 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
     <script src="https://unpkg.com/pivottable/dist/pivot.min.js"></script>
-    <script src="js/dashboard_pivot.js"></script>
+    
+    <!-- New API System -->
+    <script src="js/api-config.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/utils.js"></script>
+    
+    <script>
+        // Initialize page with authentication
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check authentication and permissions
+            if (!authManager.requirePermission('produksi')) {
+                return;
+            }
+            
+            // Initialize page
+            initializePage();
+        });
+
+        let pivotData = [];
+
+        /**
+         * Initialize page
+         */
+        async function initializePage() {
+            try {
+                showLoading('Loading pivot dashboard...');
+                
+                // Load pivot data
+                await loadPivotData();
+                
+                // Setup event listeners
+                setupEventListeners();
+                
+                hideLoading();
+            } catch (error) {
+                console.error('Error initializing page:', error);
+                hideLoading();
+                showAlert('Error loading dashboard: ' + error.message, 'error');
+            }
+        }
+
+        /**
+         * Load pivot data
+         */
+        async function loadPivotData() {
+            try {
+                // Get filter values
+                const startDate = document.getElementById('startDate')?.value;
+                const endDate = document.getElementById('endDate')?.value;
+                const kebun = document.getElementById('kebunFilter')?.value;
+                const divisi = document.getElementById('divisiFilter')?.value;
+                
+                const filters = {};
+                if (startDate && endDate) {
+                    filters.startDate = startDate;
+                    filters.endDate = endDate;
+                }
+                if (kebun) filters.kebun = kebun;
+                if (divisi) filters.divisi = divisi;
+                
+                // Load production data
+                const result = await apiService.getProduksiData(filters);
+                
+                if (result.success) {
+                    pivotData = result.data || [];
+                    
+                    // Update pivot table
+                    updatePivotTable();
+                    
+                    // Update statistics
+                    updateStatistics();
+                    
+                    // Load kebun and divisi options for filters
+                    updateFilterOptions();
+                } else {
+                    showAlert('Error loading data: ' + result.message, 'error');
+                }
+            } catch (error) {
+                console.error('Error loading pivot data:', error);
+                showAlert('Error loading data: ' + error.message, 'error');
+            }
+        }
+
+        /**
+         * Update pivot table
+         */
+        function updatePivotTable() {
+            const pivotContainer = document.getElementById('pivotTable');
+            if (!pivotContainer || !pivotData || pivotData.length === 0) {
+                if (pivotContainer) {
+                    pivotContainer.innerHTML = '<div class="alert alert-info">No data available for pivot analysis</div>';
+                }
+                return;
+            }
+            
+            // Clear existing pivot table
+            pivotContainer.innerHTML = '';
+            
+            // Prepare data for pivot table
+            const processedData = pivotData.map(item => ({
+                'Tanggal': formatDate(item.Tanggal),
+                'Bulan': item.Bulan || new Date(item.Tanggal).getMonth() + 1,
+                'Tahun': item.Tahun || new Date(item.Tanggal).getFullYear(),
+                'Kebun': item.Kebun || 'Unknown',
+                'Divisi': item.Divisi || 'Unknown',
+                'JJG Panen': parseFloat(item['JJG Panen (Jjg)']) || 0,
+                'Tonase Panen': parseFloat(item['Tonase Panen (Kg)']) || 0,
+                'BJR': parseFloat(item['BJR Hari ini']) || 0,
+                'Output Kg/HK': parseFloat(item['Output (Kg/HK)']) || 0,
+                'Output Ha/HK': parseFloat(item['Output (Ha/HK)']) || 0,
+                'Luas Panen': parseFloat(item['Luas Panen (HA)']) || 0
+            }));
+            
+            // Create pivot table
+            $(pivotContainer).pivotUI(processedData, {
+                rows: ['Kebun', 'Divisi'],
+                cols: ['Bulan'],
+                vals: ['Tonase Panen', 'JJG Panen'],
+                aggregatorName: 'Sum',
+                rendererName: 'Table',
+                renderers: $.extend(
+                    $.pivotUtilities.renderers,
+                    $.pivotUtilities.c3_renderers,
+                    $.pivotUtilities.d3_renderers
+                ),
+                hiddenAttributes: ['Tanggal'],
+                menuLimit: 500,
+                onRefresh: function(config) {
+                    // Save current pivot configuration
+                    localStorage.setItem('pivotConfig', JSON.stringify(config));
+                }
+            });
+            
+            // Load saved configuration if exists
+            const savedConfig = localStorage.getItem('pivotConfig');
+            if (savedConfig) {
+                try {
+                    const config = JSON.parse(savedConfig);
+                    $(pivotContainer).pivotUI(processedData, config);
+                } catch (e) {
+                    console.warn('Could not load saved pivot configuration:', e);
+                }
+            }
+        }
+
+        /**
+         * Update statistics
+         */
+        function updateStatistics() {
+            if (!pivotData || pivotData.length === 0) {
+                // Reset all statistics to 0
+                updateStatCard('totalRecords', 0);
+                updateStatCard('totalTonase', 0, ' Kg');
+                updateStatCard('totalJJG', 0);
+                updateStatCard('avgBJR', 0);
+                updateStatCard('totalKebun', 0);
+                updateStatCard('totalDivisi', 0);
+                return;
+            }
+            
+            const stats = {
+                totalRecords: pivotData.length,
+                totalTonase: pivotData.reduce((sum, item) => sum + (parseFloat(item['Tonase Panen (Kg)']) || 0), 0),
+                totalJJG: pivotData.reduce((sum, item) => sum + (parseFloat(item['JJG Panen (Jjg)']) || 0), 0),
+                avgBJR: pivotData.reduce((sum, item) => sum + (parseFloat(item['BJR Hari ini']) || 0), 0) / pivotData.length,
+                totalKebun: new Set(pivotData.map(item => item.Kebun)).size,
+                totalDivisi: new Set(pivotData.map(item => item.Divisi)).size
+            };
+            
+            // Update statistics cards
+            updateStatCard('totalRecords', stats.totalRecords);
+            updateStatCard('totalTonase', stats.totalTonase, ' Kg', 2);
+            updateStatCard('totalJJG', stats.totalJJG);
+            updateStatCard('avgBJR', stats.avgBJR, '', 2);
+            updateStatCard('totalKebun', stats.totalKebun);
+            updateStatCard('totalDivisi', stats.totalDivisi);
+        }
+
+        /**
+         * Update individual statistic card
+         */
+        function updateStatCard(elementId, value, suffix = '', decimals = 0) {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.textContent = formatNumber(value, decimals) + suffix;
+            }
+        }
+
+        /**
+         * Update filter options
+         */
+        function updateFilterOptions() {
+            if (!pivotData || pivotData.length === 0) return;
+            
+            // Get unique kebun and divisi values
+            const kebunOptions = [...new Set(pivotData.map(item => item.Kebun))].filter(Boolean);
+            const divisiOptions = [...new Set(pivotData.map(item => item.Divisi))].filter(Boolean);
+            
+            // Update kebun filter
+            const kebunSelect = document.getElementById('kebunFilter');
+            if (kebunSelect) {
+                const currentValue = kebunSelect.value;
+                kebunSelect.innerHTML = '<option value="">All Kebun</option>';
+                kebunOptions.forEach(kebun => {
+                    const selected = kebun === currentValue ? 'selected' : '';
+                    kebunSelect.innerHTML += `<option value="${kebun}" ${selected}>${kebun}</option>`;
+                });
+            }
+            
+            // Update divisi filter
+            const divisiSelect = document.getElementById('divisiFilter');
+            if (divisiSelect) {
+                const currentValue = divisiSelect.value;
+                divisiSelect.innerHTML = '<option value="">All Divisi</option>';
+                divisiOptions.forEach(divisi => {
+                    const selected = divisi === currentValue ? 'selected' : '';
+                    divisiSelect.innerHTML += `<option value="${divisi}" ${selected}>${divisi}</option>`;
+                });
+            }
+        }
+
+        /**
+         * Setup event listeners
+         */
+        function setupEventListeners() {
+            // Date filters
+            const startDate = document.getElementById('startDate');
+            const endDate = document.getElementById('endDate');
+            
+            if (startDate) {
+                startDate.addEventListener('change', loadPivotData);
+            }
+            
+            if (endDate) {
+                endDate.addEventListener('change', loadPivotData);
+            }
+            
+            // Kebun filter
+            const kebunFilter = document.getElementById('kebunFilter');
+            if (kebunFilter) {
+                kebunFilter.addEventListener('change', loadPivotData);
+            }
+            
+            // Divisi filter
+            const divisiFilter = document.getElementById('divisiFilter');
+            if (divisiFilter) {
+                divisiFilter.addEventListener('change', loadPivotData);
+            }
+            
+            // Refresh button
+            const refreshBtn = document.getElementById('refreshBtn');
+            if (refreshBtn) {
+                refreshBtn.addEventListener('click', loadPivotData);
+            }
+            
+            // Reset filters button
+            const resetBtn = document.getElementById('resetFiltersBtn');
+            if (resetBtn) {
+                resetBtn.addEventListener('click', resetFilters);
+            }
+            
+            // Export button
+            const exportBtn = document.getElementById('exportBtn');
+            if (exportBtn) {
+                exportBtn.addEventListener('click', handleExport);
+            }
+            
+            // Clear pivot config button
+            const clearConfigBtn = document.getElementById('clearConfigBtn');
+            if (clearConfigBtn) {
+                clearConfigBtn.addEventListener('click', clearPivotConfig);
+            }
+        }
+
+        /**
+         * Reset all filters
+         */
+        function resetFilters() {
+            document.getElementById('startDate').value = '';
+            document.getElementById('endDate').value = '';
+            document.getElementById('kebunFilter').value = '';
+            document.getElementById('divisiFilter').value = '';
+            
+            loadPivotData();
+        }
+
+        /**
+         * Clear pivot configuration
+         */
+        function clearPivotConfig() {
+            localStorage.removeItem('pivotConfig');
+            showAlert('Pivot configuration cleared. Refresh to see default layout.', 'info');
+        }
+
+        /**
+         * Handle export
+         */
+        async function handleExport() {
+            try {
+                if (!pivotData || pivotData.length === 0) {
+                    showAlert('No data to export', 'warning');
+                    return;
+                }
+                
+                showLoading('Exporting pivot data...');
+                
+                const filename = `pivot_analysis_${getCurrentDate()}.csv`;
+                exportToCSV(pivotData, filename);
+                showAlert('Data exported successfully!', 'success');
+                
+                hideLoading();
+            } catch (error) {
+                console.error('Error exporting data:', error);
+                hideLoading();
+                showAlert('Error exporting data: ' + error.message, 'error');
+            }
+        }
+
+        /**
+         * Logout function
+         */
+        function logout() {
+            authManager.logout();
+        }
+    </script>
 </body>
 </html>

@@ -285,10 +285,412 @@
         </div>
     </div>
 
+    <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
-    <script src="js/produksi.js"></script>
+    
+    <!-- New API System -->
+    <script src="js/api-config.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/utils.js"></script>
+    
+    <script>
+        // Initialize page with authentication
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check authentication and permissions
+            if (!authManager.requirePermission('produksi')) {
+                return;
+            }
+            
+            // Initialize page
+            initializePage();
+        });
+
+        let dataTable;
+        let masterData = [];
+
+        /**
+         * Initialize page
+         */
+        async function initializePage() {
+            try {
+                showLoading('Loading production data...');
+                
+                // Load master data first
+                await loadMasterData();
+                
+                // Initialize DataTable
+                initializeDataTable();
+                
+                // Load production data
+                await loadProduksiData();
+                
+                // Setup event listeners
+                setupEventListeners();
+                
+                hideLoading();
+            } catch (error) {
+                console.error('Error initializing page:', error);
+                hideLoading();
+                showAlert('Error loading page: ' + error.message, 'error');
+            }
+        }
+
+        /**
+         * Load master data for dropdowns
+         */
+        async function loadMasterData() {
+            try {
+                const result = await apiService.getMasterData();
+                if (result.success) {
+                    masterData = result.data;
+                    populateDropdowns();
+                }
+            } catch (error) {
+                console.error('Error loading master data:', error);
+            }
+        }
+
+        /**
+         * Populate dropdown options
+         */
+        function populateDropdowns() {
+            const kebunOptions = [...new Set(masterData.map(item => item.Kebun))];
+            const divisiOptions = [...new Set(masterData.map(item => item.Divisi))];
+            
+            // Populate kebun dropdown
+            const kebunSelect = document.getElementById('kebun');
+            if (kebunSelect) {
+                kebunSelect.innerHTML = '<option value="">Pilih Kebun</option>';
+                kebunOptions.forEach(kebun => {
+                    kebunSelect.innerHTML += `<option value="${kebun}">${kebun}</option>`;
+                });
+            }
+            
+            // Populate divisi dropdown
+            const divisiSelect = document.getElementById('divisi');
+            if (divisiSelect) {
+                divisiSelect.innerHTML = '<option value="">Pilih Divisi</option>';
+                divisiOptions.forEach(divisi => {
+                    divisiSelect.innerHTML += `<option value="${divisi}">${divisi}</option>`;
+                });
+            }
+        }
+
+        /**
+         * Initialize DataTable
+         */
+        function initializeDataTable() {
+            dataTable = $('#produksiTable').DataTable({
+                responsive: true,
+                pageLength: 25,
+                order: [[0, 'desc']], // Sort by date descending
+                columns: [
+                    { title: 'Tanggal', data: 'Tanggal' },
+                    { title: 'Kebun', data: 'Kebun' },
+                    { title: 'Divisi', data: 'Divisi' },
+                    { title: 'JJG Panen', data: 'JJG Panen (Jjg)' },
+                    { title: 'Tonase', data: 'Tonase Panen (Kg)' },
+                    { title: 'BJR', data: 'BJR Hari ini' },
+                    { title: 'Output (Kg/HK)', data: 'Output (Kg/HK)' },
+                    { title: 'Aksi', data: null, orderable: false }
+                ],
+                columnDefs: [
+                    {
+                        targets: 0, // Date column
+                        render: function(data) {
+                            return formatDate(data);
+                        }
+                    },
+                    {
+                        targets: [3, 4, 5, 6], // Numeric columns
+                        render: function(data) {
+                            return formatNumber(data || 0, 2);
+                        }
+                    },
+                    {
+                        targets: -1, // Action column
+                        render: function(data, type, row, meta) {
+                            const rowIndex = meta.row + 2; // +2 because DataTable is 0-indexed and sheet has header
+                            return `
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-outline-primary" onclick="editData(${rowIndex}, ${JSON.stringify(row).replace(/"/g, '&quot;')})">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-outline-danger" onclick="deleteData(${rowIndex})">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            `;
+                        }
+                    }
+                ]
+            });
+        }
+
+        /**
+         * Load production data
+         */
+        async function loadProduksiData(filters = {}) {
+            try {
+                const result = await apiService.getProduksiData(filters);
+                
+                if (result.success) {
+                    // Clear existing data
+                    dataTable.clear();
+                    
+                    // Add new data
+                    if (result.data && result.data.length > 0) {
+                        dataTable.rows.add(result.data);
+                    }
+                    
+                    // Redraw table
+                    dataTable.draw();
+                    
+                    // Update statistics
+                    updateStatistics(result.data);
+                } else {
+                    showAlert('Error loading data: ' + result.message, 'error');
+                }
+            } catch (error) {
+                console.error('Error loading production data:', error);
+                showAlert('Error loading data: ' + error.message, 'error');
+            }
+        }
+
+        /**
+         * Update statistics cards
+         */
+        function updateStatistics(data) {
+            if (!data || data.length === 0) return;
+            
+            const totalRecords = data.length;
+            const totalTonase = data.reduce((sum, item) => sum + (parseFloat(item['Tonase Panen (Kg)']) || 0), 0);
+            const totalJJG = data.reduce((sum, item) => sum + (parseFloat(item['JJG Panen (Jjg)']) || 0), 0);
+            const avgBJR = data.reduce((sum, item) => sum + (parseFloat(item['BJR Hari ini']) || 0), 0) / totalRecords;
+            
+            // Update UI elements if they exist
+            const totalRecordsEl = document.getElementById('totalRecords');
+            if (totalRecordsEl) totalRecordsEl.textContent = formatNumber(totalRecords);
+            
+            const totalTonaseEl = document.getElementById('totalTonase');
+            if (totalTonaseEl) totalTonaseEl.textContent = formatNumber(totalTonase, 2) + ' Kg';
+            
+            const totalJJGEl = document.getElementById('totalJJG');
+            if (totalJJGEl) totalJJGEl.textContent = formatNumber(totalJJG);
+            
+            const avgBJREl = document.getElementById('avgBJR');
+            if (avgBJREl) avgBJREl.textContent = formatNumber(avgBJR, 2);
+        }
+
+        /**
+         * Setup event listeners
+         */
+        function setupEventListeners() {
+            // Add data form
+            const addForm = document.getElementById('addDataForm');
+            if (addForm) {
+                addForm.addEventListener('submit', handleAddData);
+            }
+            
+            // Filter form
+            const filterForm = document.getElementById('filterForm');
+            if (filterForm) {
+                filterForm.addEventListener('submit', handleFilter);
+            }
+            
+            // Export button
+            const exportBtn = document.getElementById('exportBtn');
+            if (exportBtn) {
+                exportBtn.addEventListener('click', handleExport);
+            }
+            
+            // Refresh button
+            const refreshBtn = document.getElementById('refreshBtn');
+            if (refreshBtn) {
+                refreshBtn.addEventListener('click', () => loadProduksiData());
+            }
+        }
+
+        /**
+         * Handle add data form submission
+         */
+        async function handleAddData(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData.entries());
+            
+            // Validate required fields
+            const requiredFields = ['tanggal', 'kebun', 'divisi'];
+            const errors = validateRequired(
+                Object.fromEntries(requiredFields.map(field => [field, data[field]]))
+            );
+            
+            if (errors.length > 0) {
+                showAlert('Please fill in required fields: ' + errors.join(', '), 'error');
+                return;
+            }
+            
+            try {
+                showLoading('Adding production data...');
+                
+                const result = await apiService.addProduksiData(data);
+                
+                if (result.success) {
+                    showAlert('Production data added successfully!', 'success');
+                    e.target.reset();
+                    await loadProduksiData();
+                    
+                    // Close modal if exists
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('addDataModal'));
+                    if (modal) modal.hide();
+                } else {
+                    showAlert('Error adding data: ' + result.message, 'error');
+                }
+                
+                hideLoading();
+            } catch (error) {
+                console.error('Error adding data:', error);
+                hideLoading();
+                showAlert('Error adding data: ' + error.message, 'error');
+            }
+        }
+
+        /**
+         * Handle filter form submission
+         */
+        async function handleFilter(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const filters = Object.fromEntries(formData.entries());
+            
+            // Remove empty filters
+            Object.keys(filters).forEach(key => {
+                if (!filters[key]) delete filters[key];
+            });
+            
+            await loadProduksiData(filters);
+        }
+
+        /**
+         * Edit data
+         */
+        function editData(rowIndex, rowData) {
+            // Populate edit form with current data
+            const editForm = document.getElementById('editDataForm');
+            if (editForm) {
+                Object.keys(rowData).forEach(key => {
+                    const input = editForm.querySelector(`[name="${key}"]`);
+                    if (input) {
+                        input.value = rowData[key] || '';
+                    }
+                });
+                
+                // Store row index for update
+                editForm.dataset.rowIndex = rowIndex;
+                
+                // Show edit modal
+                const modal = new bootstrap.Modal(document.getElementById('editDataModal'));
+                modal.show();
+            }
+        }
+
+        /**
+         * Handle edit data form submission
+         */
+        async function handleEditData(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData.entries());
+            data.rowIndex = e.target.dataset.rowIndex;
+            
+            try {
+                showLoading('Updating production data...');
+                
+                const result = await apiService.updateProduksiData(data);
+                
+                if (result.success) {
+                    showAlert('Production data updated successfully!', 'success');
+                    await loadProduksiData();
+                    
+                    // Close modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('editDataModal'));
+                    if (modal) modal.hide();
+                } else {
+                    showAlert('Error updating data: ' + result.message, 'error');
+                }
+                
+                hideLoading();
+            } catch (error) {
+                console.error('Error updating data:', error);
+                hideLoading();
+                showAlert('Error updating data: ' + error.message, 'error');
+            }
+        }
+
+        /**
+         * Delete data
+         */
+        async function deleteData(rowIndex) {
+            if (!confirm('Are you sure you want to delete this record?')) {
+                return;
+            }
+            
+            try {
+                showLoading('Deleting production data...');
+                
+                const result = await apiService.deleteProduksiData(rowIndex);
+                
+                if (result.success) {
+                    showAlert('Production data deleted successfully!', 'success');
+                    await loadProduksiData();
+                } else {
+                    showAlert('Error deleting data: ' + result.message, 'error');
+                }
+                
+                hideLoading();
+            } catch (error) {
+                console.error('Error deleting data:', error);
+                hideLoading();
+                showAlert('Error deleting data: ' + error.message, 'error');
+            }
+        }
+
+        /**
+         * Handle export
+         */
+        async function handleExport() {
+            try {
+                showLoading('Exporting data...');
+                
+                const result = await apiService.getProduksiData();
+                
+                if (result.success && result.data) {
+                    exportToCSV(result.data, `produksi_data_${getCurrentDate()}.csv`);
+                    showAlert('Data exported successfully!', 'success');
+                } else {
+                    showAlert('Error exporting data: ' + result.message, 'error');
+                }
+                
+                hideLoading();
+            } catch (error) {
+                console.error('Error exporting data:', error);
+                hideLoading();
+                showAlert('Error exporting data: ' + error.message, 'error');
+            }
+        }
+
+        /**
+         * Logout function
+         */
+        function logout() {
+            authManager.logout();
+        }
+    </script>
 </body>
 </html>
