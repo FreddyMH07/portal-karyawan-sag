@@ -6,7 +6,7 @@
 const API_CONFIG = {
   // Production API (existing - enhanced)
   PRODUKSI: {
-    url: 'https://script.google.com/macros/s/AKfycbwBIaF_e9hkRgM1RzP4PJzi3bxREUaiD9U8wSycA5pvybedhjvd3ypcJt1_BxPq1ni58Q/exec',
+    url: 'https://script.google.com/macros/s/AKfycbyB3hMh3GID4NBckUVvbaL_dZwYFfvZnhs5SMg0tarQ2l_kBmPIlkIJvHIMfSTbRBNj9g/exec',
     sheetId: '1UMA4dHaqG6dmJ0kWTq7NPz6xmqnTPSqJpMu4ws7TFjs',
     name: 'Produksi API',
     description: 'Production data management'
@@ -14,7 +14,7 @@ const API_CONFIG = {
   
   // Absensi API (new - to be deployed)
   ABSENSI: {
-    url: 'YOUR_ABSENSI_API_URL_HERE', // Replace after deployment
+    url: 'https://script.google.com/macros/s/AKfycbyimMien-z5J1qfhUv8_9fFHD4whnk8MNJGccqn_zj5NNkW47tr6NxejUCj68mP42UIrg/exec', // Replace after deployment
     sheetId: '1UaETaH6VgTAG0agxrsoVuUvJYrCbbM3mTErAW6_eviM',
     name: 'Absensi API',
     description: 'Employee attendance management'
@@ -22,7 +22,7 @@ const API_CONFIG = {
   
   // Booking API (new - to be deployed)
   BOOKING: {
-    url: 'YOUR_BOOKING_API_URL_HERE', // Replace after deployment
+    url: 'https://script.google.com/macros/s/AKfycbxRvyEQ4Yx7HwW1oZh-nTWTwi-YI8QLcPxWb4enQXfi1SbHDCBDiTqjbNFNB9htd6tTMQ/exec', // Replace after deployment
     sheetId: '1dPpQKnjNFvVssl12at6hC8416Atmr4GWrNspMRaLOiA',
     name: 'Booking API',
     description: 'Room and facility booking system'
@@ -30,16 +30,16 @@ const API_CONFIG = {
   
   // Asset/KPI API (new - to be deployed)
   ASSET: {
-    url: 'YOUR_ASSET_API_URL_HERE', // Replace after deployment
-    sheetId: '1kgLyl_lGOPONQC6bOLndERodR17QkDnRRllN4I8tJPQ',
+    url: 'https://script.google.com/macros/s/AKfycbwyFdPS4LuNbUXASgpdoKTZwE_34a-eIYN_kDsqrWBI_HwZMbx2gmz7Y-_OEpxL-uabfA/exec', // Replace after deployment
+    sheetId: '1uL8dPo07vIRFc3eOBcahlLVgJG6uIpD67SQlXZA9zNI',
     name: 'Asset/KPI API',
     description: 'Asset management and KPI tracking'
   },
   
   // Users API (new - to be deployed)
   USERS: {
-    url: 'YOUR_USERS_API_URL_HERE', // Replace after deployment
-    sheetId: '1UMA4dHaqG6dmJ0kWTq7NPz6xmqnTPSqJpMu4ws7TFjs',
+    url: 'https://script.google.com/macros/s/AKfycbzQkGaQorlqskrLgB6j1MajmDe1HhfAciCR4FaLNZE05czOAHA0wORt2edmQtl61PqByA/exec', // Replace after deployment
+    sheetId: '1YetLgN6ppoHtOjJ9vwzqHlrpoo532BqTKQbmyHNa0ks',
     name: 'Users API',
     description: 'User authentication and management'
   }
