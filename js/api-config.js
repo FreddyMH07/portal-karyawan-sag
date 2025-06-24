@@ -452,6 +452,7 @@ class APIService {
 
 // Create global API service instance
 const apiService = new APIService();
+window.apiService = apiService;
 
 // Auto-update user info on page load
 document.addEventListener('DOMContentLoaded', function() {
